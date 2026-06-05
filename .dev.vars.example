@@ -1,0 +1,11 @@
+# ──────────────────────────────────────────────────────────
+# Local development environment variables for Wrangler
+# Copy this file to .dev.vars and fill in the values
+# NEVER commit .dev.vars to version control
+# ──────────────────────────────────────────────────────────
+
+# Local D1 database path (used by wrangler dev)
+# DATABASE_URL=file:./db/custom.db
+
+# Application secrets (set via Cloudflare dashboard for production)
+# AUTH_SECRET=your-secret-key-here

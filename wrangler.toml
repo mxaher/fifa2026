@@ -1,0 +1,20 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "fifa26-predictions"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ──────────────────────────────────────────────────────────
+# Cloudflare Workers + D1 configuration
+# ──────────────────────────────────────────────────────────
+
+# D1 Database binding — accessible as env.DB in Workers
+[[d1_databases]]
+binding = "DB"
+database_name = "fifa26-predictions-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# ──────────────────────────────────────────────────────────
+# Non-secret environment variables
+# ──────────────────────────────────────────────────────────
+[vars]
+NODE_ENV = "production"

@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.dev.vars
+
+# prisma (removed — now using Drizzle ORM)
+prisma/
+
+# drizzle local migrations (generated per-environment)
+drizzle/
 
 # vercel
 .vercel
