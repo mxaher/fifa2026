@@ -192,6 +192,8 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<MatchWithTeams | null>(null);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
     if (isRegister) {
@@ -222,72 +224,348 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
     setLoading(false);
   };
 
+  const handleMatchClick = (match: MatchWithTeams) => {
+    setSelectedMatch(match);
+    setShowLoginPrompt(true);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--gradient-hero)' }}>
-      <div className="w-full max-w-md rounded-2xl p-8" style={{ background: 'rgba(10,22,40,0.85)', backdropFilter: 'blur(20px)', border: '1px solid var(--border-color)' }}>
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-3">🏆</div>
-          <h1 className="text-3xl font-black" style={{ color: 'var(--wc-gold)' }}>ملك التوقعات</h1>
-          <p className="font-bebas text-xl tracking-wider mt-1" style={{ color: 'var(--wc-sky)' }}>FIFA WORLD CUP 2026™</p>
-          <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>مجموعة المرشد القابضة</p>
+    <div className="min-h-screen" style={{ background: 'var(--gradient-hero)' }}>
+      {/* Hero Section */}
+      <div className="text-center py-8 px-4">
+        <div className="text-6xl mb-3">🏆</div>
+        <h1 className="text-3xl md:text-4xl font-black" style={{ color: 'var(--wc-gold)' }}>ملك التوقعات</h1>
+        <p className="font-bebas text-xl md:text-2xl tracking-wider mt-1" style={{ color: 'var(--wc-sky)' }}>FIFA WORLD CUP 2026™</p>
+        <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>مجموعة المرشد القابضة</p>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto px-4 pb-8">
+        {/* Login Form - Right Side (RTL) */}
+        <div className="w-full lg:w-96 lg:order-1 flex-shrink-0">
+          <div className="rounded-2xl p-6 sticky top-4" style={{ background: 'rgba(10,22,40,0.85)', backdropFilter: 'blur(20px)', border: '1px solid var(--border-color)' }}>
+            <h2 className="text-xl font-bold text-center mb-4" style={{ color: 'var(--wc-gold)' }}>
+              {isRegister ? 'إنشاء حساب جديد' : 'تسجيل الدخول'}
+            </h2>
+
+            {error && (
+              <div className="mb-4 p-3 rounded-lg text-sm text-center" style={{ background: 'rgba(244,67,54,0.15)', color: '#F44336', border: '1px solid rgba(244,67,54,0.3)' }}>
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {isRegister && (
+                <div>
+                  <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>الاسم الكامل</label>
+                  <Input value={name} onChange={e => setName(e.target.value)} required
+                    className="h-10 text-sm" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    placeholder="أدخل اسمك" />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>البريد الإلكتروني</label>
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                  className="h-10 text-sm" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                  placeholder="example@almarshad.com" dir="ltr" />
+              </div>
+              {isRegister && (
+                <div>
+                  <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>القسم</label>
+                  <select value={department} onChange={e => setDepartment(e.target.value)} required
+                    className="w-full h-10 px-3 rounded-lg text-sm" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                    <option value="">اختر القسم...</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.nameAr || d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>كلمة المرور</label>
+                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required
+                  className="h-10 text-sm" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                  placeholder="••••••••" dir="ltr" />
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full h-11 text-base font-bold"
+                style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+                {loading ? '...' : isRegister ? 'إنشاء حساب' : 'تسجيل الدخول'}
+              </Button>
+            </form>
+
+            <div className="text-center mt-4">
+              <button onClick={() => { setIsRegister(!isRegister); setError(''); }}
+                className="text-sm underline" style={{ color: 'var(--wc-sky)' }}>
+                {isRegister ? 'لديك حساب؟ سجّل الدخول' : 'ليس لديك حساب؟ سجّل الآن'}
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-4 p-3 rounded-lg text-sm text-center" style={{ background: 'rgba(244,67,54,0.15)', color: '#F44336', border: '1px solid rgba(244,67,54,0.3)' }}>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isRegister && (
-            <div>
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>الاسم الكامل</label>
-              <Input value={name} onChange={e => setName(e.target.value)} required
-                className="h-11" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                placeholder="أدخل اسمك" />
-            </div>
-          )}
-          <div>
-            <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>البريد الإلكتروني</label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              className="h-11" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-              placeholder="example@almarshad.com" dir="ltr" />
-          </div>
-          {isRegister && (
-            <div>
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>القسم</label>
-              <select value={department} onChange={e => setDepartment(e.target.value)} required
-                className="w-full h-11 px-3 rounded-lg text-sm" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
-                <option value="">اختر القسم...</option>
-                {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.nameAr || d.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div>
-            <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>كلمة المرور</label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="h-11" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-              placeholder="••••••••" dir="ltr" />
-          </div>
-
-          <Button type="submit" disabled={loading} className="w-full h-12 text-lg font-bold"
-            style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
-            {loading ? '...' : isRegister ? 'إنشاء حساب' : 'تسجيل الدخول'}
-          </Button>
-        </form>
-
-        <div className="text-center mt-6">
-          <button onClick={() => { setIsRegister(!isRegister); setError(''); }}
-            className="text-sm underline" style={{ color: 'var(--wc-sky)' }}>
-            {isRegister ? 'لديك حساب؟ سجّل الدخول' : 'ليس لديك حساب؟ سجّل الآن'}
-          </button>
+        {/* Tournament Schedule - Left Side */}
+        <div className="flex-1 lg:order-2">
+          <TournamentSchedule onMatchClick={handleMatchClick} />
         </div>
       </div>
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && selectedMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowLoginPrompt(false)}>
+          <div className="rounded-2xl p-6 max-w-md w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="text-center">
+              <div className="text-5xl mb-3">⚽</div>
+              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--wc-gold)' }}>تنبأ بهذه المباراة</h3>
+
+              {/* Match Preview */}
+              <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                <div className="flex items-center justify-center gap-4">
+                  <div className="text-center">
+                    <div className="text-3xl mb-1">{selectedMatch.homeTeam?.flag}</div>
+                    <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{selectedMatch.homeTeam?.nameAr || selectedMatch.homeTeam?.name}</div>
+                  </div>
+                  <div className="text-center px-3">
+                    <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>ضد</div>
+                    <div className="font-bebas text-2xl" style={{ color: 'var(--wc-gold)' }}>VS</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl mb-1">{selectedMatch.awayTeam?.flag}</div>
+                    <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{selectedMatch.awayTeam?.nameAr || selectedMatch.awayTeam?.name}</div>
+                  </div>
+                </div>
+                <div className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+                  {new Date(selectedMatch.kickoff).toLocaleDateString('ar-SA', { weekday: 'long', month: 'long', day: 'numeric' })}
+                  {' • '}
+                  {new Date(selectedMatch.kickoff).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                سجّل الدخول أو أنشئ حساباً جديداً لتتمكن من التنبؤ بهذه المباراة
+              </p>
+
+              <div className="flex gap-3">
+                <Button onClick={() => setShowLoginPrompt(false)}
+                  className="flex-1 h-10"
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                  إغلاق
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/* ─── Tournament Schedule ─── */
+function TournamentSchedule({ onMatchClick }: { onMatchClick?: (match: MatchWithTeams) => void }) {
+  const [matches, setMatches] = useState<MatchWithTeams[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetch('/api/matches')
+      .then(r => r.json())
+      .then(data => {
+        if (data.matches) {
+          setMatches(data.matches);
+          // Auto-select today or first match date
+          const today = new Date().toISOString().split('T')[0];
+          const dates = [...new Set(data.matches.map((m: MatchWithTeams) => new Date(m.kickoff).toISOString().split('T')[0]))] as string[];
+          if (dates.includes(today)) {
+            setSelectedDate(today);
+          } else if (dates.length > 0) {
+            // Find the closest upcoming date
+            const now = Date.now();
+            const upcoming = dates.find(d => new Date(d).getTime() >= now) || dates[0];
+            setSelectedDate(upcoming);
+          }
+          // Expand first 3 dates
+          setExpandedDates(new Set(dates.slice(0, 3)));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  // Group matches by date
+  const matchesByDate = new Map<string, MatchWithTeams[]>();
+  for (const match of matches) {
+    const date = new Date(match.kickoff).toISOString().split('T')[0];
+    if (selectedGroup !== 'all' && match.groupLetter !== selectedGroup) continue;
+    if (!matchesByDate.has(date)) matchesByDate.set(date, []);
+    matchesByDate.get(date)!.push(match);
+  }
+
+  const sortedDates = [...matchesByDate.keys()].sort();
+
+  const toggleDate = (date: string) => {
+    const next = new Set(expandedDates);
+    if (next.has(date)) next.delete(date);
+    else next.add(date);
+    setExpandedDates(next);
+  };
+
+  const groups = ['all', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-4xl animate-pulse mb-3">⚽</div>
+        <p style={{ color: 'var(--text-muted)' }}>جاري تحميل جدول المباريات...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="rounded-xl p-4 text-center" style={{ background: 'rgba(139,0,0,0.2)', border: '1px solid rgba(139,0,0,0.3)' }}>
+        <h2 className="text-2xl font-black" style={{ color: 'var(--wc-gold)' }}>📅 جدول المباريات</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>اضغط على أي مباراة للتنبؤ</p>
+      </div>
+
+      {/* Group Filter */}
+      <div className="flex gap-1 overflow-x-auto pb-2">
+        {groups.map(g => (
+          <button key={g} onClick={() => setSelectedGroup(g)}
+            className="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all"
+            style={{
+              background: selectedGroup === g ? 'rgba(255,215,0,0.15)' : 'var(--bg-card)',
+              color: selectedGroup === g ? 'var(--wc-gold)' : 'var(--text-muted)',
+              border: `1px solid ${selectedGroup === g ? 'var(--wc-gold)' : 'var(--border-color)'}`,
+            }}>
+            {g === 'all' ? 'الكل' : `المجموعة ${g}`}
+          </button>
+        ))}
+      </div>
+
+      {/* Dates */}
+      <div className="space-y-3">
+        {sortedDates.map(date => {
+          const dateObj = new Date(date + 'T12:00:00');
+          const dayName = dateObj.toLocaleDateString('ar-SA', { weekday: 'long' });
+          const dayNum = dateObj.toLocaleDateString('ar-SA', { month: 'long', day: 'numeric' });
+          const isExpanded = expandedDates.has(date);
+          const dayMatches = matchesByDate.get(date) || [];
+          const finishedCount = dayMatches.filter(m => m.status === 'finished').length;
+          const upcomingCount = dayMatches.filter(m => m.status === 'upcoming').length;
+          const isToday = date === new Date().toISOString().split('T')[0];
+          const isPast = new Date(date).getTime() < Date.now() - 86400000;
+
+          return (
+            <div key={date} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--wc-gold)' : 'var(--border-color)'}` }}>
+              {/* Date Header */}
+              <button onClick={() => toggleDate(date)}
+                className="w-full flex items-center justify-between p-3 transition-colors hover:opacity-90"
+                style={{ background: isToday ? 'rgba(255,215,0,0.08)' : 'transparent' }}>
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{isToday ? '🔥' : isPast ? '✅' : '📅'}</div>
+                  <div className="text-right">
+                    <div className="font-bold text-sm" style={{ color: isToday ? 'var(--wc-gold)' : 'var(--text-primary)' }}>
+                      {dayName} {isToday && '(اليوم)'}
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{dayNum}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-2 text-xs">
+                    {finishedCount > 0 && <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(46,125,50,0.2)', color: '#4CAF50' }}>{finishedCount} منتهية</span>}
+                    {upcomingCount > 0 && <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(79,195,247,0.2)', color: '#4FC3F7' }}>{upcomingCount} قادمة</span>}
+                  </div>
+                  <span className="text-lg transition-transform" style={{ color: 'var(--text-muted)', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
+                </div>
+              </button>
+
+              {/* Matches List */}
+              {isExpanded && (
+                <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  {dayMatches.map(match => (
+                    <MatchScheduleCard key={match.id} match={match} onClick={() => onMatchClick?.(match)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {sortedDates.length === 0 && (
+        <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>
+          <div className="text-4xl mb-3">📭</div>
+          <p>لا توجد مباريات في هذا التصنيف</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Match Schedule Card ─── */
+function MatchScheduleCard({ match, onClick }: { match: MatchWithTeams; onClick: () => void }) {
+  const kickoff = new Date(match.kickoff);
+  const time = kickoff.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  const isFinished = match.status === 'finished';
+  const isLive = match.status === 'live';
+
+  return (
+    <button onClick={onClick}
+      className="w-full flex items-center gap-3 p-3 transition-all hover:opacity-90 text-right"
+      style={{ borderBottom: '1px solid var(--border-color)' }}>
+      {/* Time */}
+      <div className="text-center flex-shrink-0 w-14">
+        <div className="font-bebas text-lg" style={{ color: isLive ? '#F44336' : 'var(--wc-sky)' }}>{time}</div>
+        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>م {match.matchNumber}</div>
+      </div>
+
+      {/* Teams */}
+      <div className="flex-1 flex items-center justify-center gap-2">
+        <div className="flex items-center gap-1.5 flex-1 justify-end">
+          <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{match.homeTeam?.nameAr || match.homeTeam?.name}</span>
+          <span className="text-lg flex-shrink-0">{match.homeTeam?.flag}</span>
+        </div>
+
+        <div className="flex-shrink-0 text-center px-2">
+          {isFinished ? (
+            <div className="font-bebas text-lg px-2" style={{ color: 'var(--wc-gold)' }}>
+              {match.homeScore} - {match.awayScore}
+            </div>
+          ) : isLive ? (
+            <div className="px-2 py-0.5 rounded-full text-xs font-bold animate-pulse" style={{ background: 'rgba(244,67,54,0.2)', color: '#F44336' }}>
+              مباشر
+            </div>
+          ) : (
+            <div className="font-bebas text-lg" style={{ color: 'var(--text-muted)' }}>vs</div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-1">
+          <span className="text-lg flex-shrink-0">{match.awayTeam?.flag}</span>
+          <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{match.awayTeam?.nameAr || match.awayTeam?.name}</span>
+        </div>
+      </div>
+
+      {/* Status */}
+      <div className="flex-shrink-0 text-left">
+        {match.prediction ? (
+          <div className="px-2 py-1 rounded-full text-xs" style={{ background: 'rgba(46,125,50,0.2)', color: '#4CAF50' }}>
+            ✓ تم التنبؤ
+          </div>
+        ) : isFinished ? (
+          <div className="px-2 py-1 rounded-full text-xs" style={{ background: 'rgba(100,116,139,0.2)', color: 'var(--text-muted)' }}>
+            منتهية
+          </div>
+        ) : (
+          <div className="px-2 py-1 rounded-full text-xs" style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--wc-gold)' }}>
+            تنبأ ⚽
+          </div>
+        )}
+      </div>
+    </button>
   );
 }
 
@@ -865,13 +1143,14 @@ function RulesView() {
 
 /* ─── Admin Panel ─── */
 function AdminPanel({ adminToken }: { adminToken: string }) {
-  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results' | 'departments'>('users');
+  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results' | 'departments' | 'email'>('users');
 
   const tabs = [
     { id: 'users' as const, label: '👥 المستخدمين', icon: Users },
     { id: 'matches' as const, label: '⚽ المباريات', icon: Swords },
     { id: 'results' as const, label: '📊 النتائج', icon: BarChart3 },
     { id: 'departments' as const, label: '🏢 الأقسام', icon: ScrollText },
+    { id: 'email' as const, label: '📧 البريد', icon: ScrollText },
   ];
 
   return (
@@ -901,6 +1180,7 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
       {adminTab === 'matches' && <AdminMatchesTab adminToken={adminToken} />}
       {adminTab === 'results' && <AdminResultsTab adminToken={adminToken} />}
       {adminTab === 'departments' && <AdminDepartmentsTab adminToken={adminToken} />}
+      {adminTab === 'email' && <AdminEmailTab adminToken={adminToken} />}
     </div>
   );
 }
@@ -1706,6 +1986,296 @@ function AdminResultsTab({ adminToken }: { adminToken: string }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* ─── Admin Email Tab ─── */
+function AdminEmailTab({ adminToken }: { adminToken: string }) {
+  const [tab, setTab] = useState<'config' | 'send' | 'logs'>('config');
+  const [config, setConfig] = useState<any>(null);
+  const [summary, setSummary] = useState<any>(null);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [configForm, setConfigForm] = useState({ apiKey: '', fromEmail: '', fromName: 'ملك التوقعات', recipients: '', autoSendDaily: false });
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+
+  useEffect(() => {
+    const h = async () => {
+      setLoading(true);
+      try {
+        const [cfgRes, logRes] = await Promise.all([
+          apiFetch('/api/admin/email-config', { headers: { 'X-Admin-Token': adminToken } }),
+          apiFetch('/api/admin/email-log', { headers: { 'X-Admin-Token': adminToken } }),
+        ]);
+        if (cfgRes.config) {
+          setConfig(cfgRes.config);
+          setConfigForm({
+            apiKey: cfgRes.config.apiKey || '',
+            fromEmail: cfgRes.config.fromEmail || '',
+            fromName: cfgRes.config.fromName || 'ملك التوقعات',
+            recipients: (cfgRes.config.recipients || []).join(', '),
+            autoSendDaily: cfgRes.config.autoSendDaily || false,
+          });
+        }
+        if (logRes.logs) setLogs(logRes.logs);
+      } catch {}
+      setLoading(false);
+    };
+    h();
+  }, [adminToken]);
+
+  const loadSummary = async () => {
+    try {
+      const data = await apiFetch('/api/admin/email', { headers: { 'X-Admin-Token': adminToken } });
+      setSummary(data);
+    } catch {}
+  };
+
+  const handlePreview = async () => {
+    await loadSummary();
+    if (summary?.html) setPreviewHtml(summary.html);
+  };
+
+  const handleSend = async () => {
+    setSending(true);
+    setMessage(null);
+    try {
+      const data = await apiFetch('/api/admin/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({}),
+      });
+      if (data.success) {
+        setMessage({ type: 'success', text: data.message });
+        const logRes = await apiFetch('/api/admin/email-log', { headers: { 'X-Admin-Token': adminToken } });
+        if (logRes.logs) setLogs(logRes.logs);
+      } else {
+        setMessage({ type: 'error', text: data.error || data.message || 'فشل الإرسال' });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'خطأ في الاتصال' });
+    }
+    setSending(false);
+  };
+
+  const handleSaveConfig = async () => {
+    setMessage(null);
+    try {
+      const data = await apiFetch('/api/admin/email-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({
+          apiKey: configForm.apiKey,
+          fromEmail: configForm.fromEmail,
+          fromName: configForm.fromName,
+          recipients: configForm.recipients.split(',').map((s: string) => s.trim()).filter(Boolean),
+          autoSendDaily: configForm.autoSendDaily,
+        }),
+      });
+      if (data.success) {
+        setMessage({ type: 'success', text: 'تم حفظ الإعدادات' });
+        setConfig({ ...config, hasApiKey: !!configForm.apiKey });
+      } else {
+        setMessage({ type: 'error', text: data.error || 'فشل الحفظ' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'خطأ في الاتصال' });
+    }
+  };
+
+  if (loading) return <div className="text-center py-8" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {[
+          { id: 'config' as const, label: '⚙️ الإعدادات' },
+          { id: 'send' as const, label: '📧 إرسال' },
+          { id: 'logs' as const, label: '📋 السجل' },
+        ].map(t => (
+          <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'send' && !summary) loadSummary(); }}
+            className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
+            style={{
+              background: tab === t.id ? 'rgba(255,215,0,0.15)' : 'var(--bg-card)',
+              color: tab === t.id ? 'var(--wc-gold)' : 'var(--text-muted)',
+              border: `1px solid ${tab === t.id ? 'var(--wc-gold)' : 'var(--border-color)'}`,
+            }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Message */}
+      {message && (
+        <div className="rounded-lg p-3 text-sm"
+          style={{
+            background: message.type === 'success' ? 'rgba(46,125,50,0.15)' : 'rgba(139,0,0,0.15)',
+            color: message.type === 'success' ? '#4CAF50' : '#f44336',
+            border: `1px solid ${message.type === 'success' ? 'rgba(46,125,50,0.3)' : 'rgba(139,0,0,0.3)'}`,
+          }}>
+          {message.text}
+        </div>
+      )}
+
+      {/* Config Tab */}
+      {tab === 'config' && (
+        <div className="rounded-xl p-5 space-y-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>إعدادات البريد الإلكتروني</h3>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            استخدم <a href="https://resend.com" target="_blank" rel="noopener" className="underline" style={{ color: 'var(--wc-sky)' }}>Resend.com</a> للحصول على مفتاح API مجاني (50,000 إيميل/شهر)
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Resend API Key</label>
+              <Input type="password" value={configForm.apiKey} onChange={e => setConfigForm({ ...configForm, apiKey: e.target.value })}
+                placeholder="re_xxxxxxxxxx" dir="ltr"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+            </div>
+            <div>
+              <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>بريد المرسل (From Email)</label>
+              <Input type="email" value={configForm.fromEmail} onChange={e => setConfigForm({ ...configForm, fromEmail: e.target.value })}
+                placeholder="noreply@yourdomain.com" dir="ltr"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+            </div>
+            <div>
+              <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>اسم المرسل</label>
+              <Input value={configForm.fromName} onChange={e => setConfigForm({ ...configForm, fromName: e.target.value })}
+                placeholder="ملك التوقعات"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+            </div>
+            <div>
+              <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>المستقبلون (مفصولة بفاصلة)</label>
+              <Input value={configForm.recipients} onChange={e => setConfigForm({ ...configForm, recipients: e.target.value })}
+                placeholder="user1@company.com, user2@company.com"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={configForm.autoSendDaily}
+                onChange={e => setConfigForm({ ...configForm, autoSendDaily: e.target.checked })}
+                className="rounded" />
+              <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>إرسال تلقائي يومي</label>
+            </div>
+          </div>
+          <Button onClick={handleSaveConfig}
+            className="h-10 font-bold"
+            style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+            💾 حفظ الإعدادات
+          </Button>
+          {config?.lastSentAt && (
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              آخر إرسال: {new Date(config.lastSentAt).toLocaleString('ar-SA')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Send Tab */}
+      {tab === 'send' && (
+        <div className="space-y-4">
+          {/* Summary Stats */}
+          <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+            <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--wc-gold)' }}>ملخص اليوم</h3>
+            {summary ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: 'المستخدمين', value: summary.stats.totalUsers, sub: `+${summary.stats.newUsersToday} جديد` },
+                  { label: 'التوقعات', value: summary.stats.totalPredictions, sub: `+${summary.stats.predictionsToday} جديدة` },
+                  { label: 'مباريات منتهية', value: summary.stats.finishedMatchesToday, sub: `من ${summary.stats.matchesToday}` },
+                  { label: 'التصنيف', value: summary.leaderboard?.[0]?.name || '-', sub: `${summary.leaderboard?.[0]?.points || 0} نقطة` },
+                ].map((s, i) => (
+                  <div key={i} className="rounded-lg p-3 text-center" style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)' }}>
+                    <div className="text-xl font-bold" style={{ color: 'var(--wc-gold)' }}>{s.value}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.label}</div>
+                    <div className="text-xs mt-1" style={{ color: 'var(--wc-sky)' }}>{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Button onClick={loadSummary} className="h-10" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                📊 تحميل الملخص
+              </Button>
+            )}
+          </div>
+
+          {/* Send Actions */}
+          <div className="rounded-xl p-5 space-y-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+            <h3 className="text-lg font-bold" style={{ color: 'var(--wc-sky)' }}>إرسال التقرير</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={handlePreview} disabled={!summary}
+                className="h-10"
+                style={{ background: 'rgba(79,195,247,0.15)', color: 'var(--wc-sky)', border: '1px solid rgba(79,195,247,0.3)' }}>
+                👁️ معاينة
+              </Button>
+              <Button onClick={handleSend} disabled={sending || !config?.hasApiKey}
+                className="h-10 font-bold"
+                style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+                {sending ? '⏳ جاري الإرسال...' : '📧 إرسال التقرير'}
+              </Button>
+            </div>
+            {!config?.hasApiKey && (
+              <p className="text-xs" style={{ color: '#f44336' }}>⚠️ يجب إعداد Resend API Key أولاً في تبويب الإعدادات</p>
+            )}
+          </div>
+
+          {/* Preview */}
+          {previewHtml && (
+            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-color)' }}>
+              <div className="flex items-center justify-between p-3" style={{ background: 'var(--bg-card)' }}>
+                <span className="text-sm font-medium" style={{ color: 'var(--wc-gold)' }}>معاينة البريد</span>
+                <button onClick={() => setPreviewHtml(null)} className="text-xs" style={{ color: 'var(--text-muted)' }}>إغلاق ✕</button>
+              </div>
+              <iframe srcDoc={previewHtml} className="w-full" style={{ height: '800px', border: 'none', background: '#0A1628' }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Logs Tab */}
+      {tab === 'logs' && (
+        <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+          <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--wc-gold)' }}>سجل الإرسالات</h3>
+          {logs.length === 0 ? (
+            <p className="text-sm text-center py-8" style={{ color: 'var(--text-muted)' }}>لا توجد سجلات إرسال</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <th className="px-3 py-2 text-right" style={{ color: 'var(--text-muted)' }}>التاريخ</th>
+                    <th className="px-3 py-2 text-right" style={{ color: 'var(--text-muted)' }}>الموضوع</th>
+                    <th className="px-3 py-2 text-center" style={{ color: 'var(--text-muted)' }}>المستقبلون</th>
+                    <th className="px-3 py-2 text-center" style={{ color: 'var(--text-muted)' }}>الحالة</th>
+                    <th className="px-3 py-2 text-center" style={{ color: 'var(--text-muted)' }}>بواسطة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log: any) => (
+                    <tr key={log.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>
+                        {log.createdAt ? new Date(log.createdAt).toLocaleString('ar-SA') : '-'}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--text-primary)' }}>{log.subject}</td>
+                      <td className="px-3 py-2 text-center" style={{ color: 'var(--text-primary)' }}>{log.recipientCount}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`px-2 py-1 rounded-full text-xs ${log.status === 'sent' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+                          {log.status === 'sent' ? '✅ تم' : '❌ فشل'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-center" style={{ color: 'var(--text-muted)' }}>
+                        {log.sentBy === 'cron' ? '🔄 تلقائي' : '👤 يدوي'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -88,6 +88,31 @@ export const syncLog = sqliteTable("sync_log", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
+// Email configuration (single row)
+export const emailConfig = sqliteTable("email_config", {
+  id: text("id").primaryKey().default("default"),
+  apiKey: text("api_key").notNull().default(""),
+  fromEmail: text("from_email").notNull().default(""),
+  fromName: text("from_name").notNull().default("ملك التوقعات"),
+  recipients: text("recipients").notNull().default("[]"), // JSON array of email strings
+  autoSendDaily: integer("auto_send_daily", { mode: "boolean" }).default(false),
+  lastSentAt: integer("last_sent_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
+// Email send log
+export const emailLog = sqliteTable("email_log", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  recipientCount: integer("recipient_count").notNull(),
+  subject: text("subject").notNull(),
+  status: text("status").notNull(), // 'sent' | 'failed'
+  messageId: text("message_id"),
+  error: text("error"),
+  sentBy: text("sent_by").notNull(), // 'admin' | 'cron'
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Team = typeof teams.$inferSelect;
@@ -95,3 +120,5 @@ export type Match = typeof matches.$inferSelect;
 export type Prediction = typeof predictions.$inferSelect;
 export type SyncLogEntry = typeof syncLog.$inferSelect;
 export type Department = typeof departments.$inferSelect;
+export type EmailConfig = typeof emailConfig.$inferSelect;
+export type EmailLog = typeof emailLog.$inferSelect;

@@ -110,25 +110,115 @@ async function fetchFromBackup(): Promise<NormalizedMatch[]> {
 const TEAM_NAME_MAP: Record<string, string> = {
   'USA': 'United States',
   'United States of America': 'United States',
+  'USMNT': 'United States',
   'Korea Republic': 'South Korea',
   'Republic of Korea': 'South Korea',
+  'Korea': 'South Korea',
   'IR Iran': 'Iran',
+  'Islamic Republic of Iran': 'Iran',
   'Czechia': 'Czech Republic',
+  'Czech': 'Czech Republic',
   'Bosnia Herzegovina': 'Bosnia and Herzegovina',
   'Bosnia & Herzegovina': 'Bosnia and Herzegovina',
+  'Bosnia': 'Bosnia and Herzegovina',
   "Côte d'Ivoire": 'Ivory Coast',
   "Cote d'Ivoire": 'Ivory Coast',
+  'Ivory Coast': 'Ivory Coast',
   'Congo DR': 'DR Congo',
   'Democratic Republic of the Congo': 'DR Congo',
+  'DR Congo': 'DR Congo',
+  'Congo': 'DR Congo',
   'KSA': 'Saudi Arabia',
-  // Primary API (worldcup26.ir) uses these names
+  'Saudi': 'Saudi Arabia',
   'Curaçao': 'Curaçao',
-  'Ivory Coast': 'Ivory Coast',
+  'Curacao': 'Curaçao',
   'Bosnia and Herzegovina': 'Bosnia and Herzegovina',
+  'New Zealand': 'New Zealand',
+  'NZ': 'New Zealand',
+  'South Korea': 'South Korea',
+  'Czech Republic': 'Czech Republic',
+  'Burkina Faso': 'Burkina Faso',
+  'Cape Verde': 'Cape Verde',
+  'Cabo Verde': 'Cape Verde',
+  'Equatorial Guinea': 'Equatorial Guinea',
+  'United States': 'United States',
+  'England': 'England',
+  'France': 'France',
+  'Spain': 'Spain',
+  'Germany': 'Germany',
+  'Brazil': 'Brazil',
+  'Argentina': 'Argentina',
+  'Portugal': 'Portugal',
+  'Belgium': 'Belgium',
+  'Netherlands': 'Netherlands',
+  'Japan': 'Japan',
+  'Morocco': 'Morocco',
+  'Australia': 'Australia',
+  'Mexico': 'Mexico',
+  'Ecuador': 'Ecuador',
+  'Uruguay': 'Uruguay',
+  'Senegal': 'Senegal',
+  'Switzerland': 'Switzerland',
+  'Algeria': 'Algeria',
+  'Egypt': 'Egypt',
+  'Tunisia': 'Tunisia',
+  'Sweden': 'Sweden',
+  'Norway': 'Norway',
+  'Croatia': 'Croatia',
+  'Denmark': 'Denmark',
+  'Ireland': 'Ireland',
+  'Scotland': 'Scotland',
+  'Wales': 'Wales',
+  'Poland': 'Poland',
+  'Serbia': 'Serbia',
+  'Ukraine': 'Ukraine',
+  'Turkey': 'Turkey',
+  'Ghana': 'Ghana',
+  'Cameroon': 'Cameroon',
+  'Nigeria': 'Nigeria',
+  'Panama': 'Panama',
+  'Haiti': 'Haiti',
+  'Jamaica': 'Jamaica',
+  'Canada': 'Canada',
+  'Costa Rica': 'Costa Rica',
+  'Honduras': 'Honduras',
+  'Paraguay': 'Paraguay',
+  'Chile': 'Chile',
+  'Colombia': 'Colombia',
+  'Peru': 'Peru',
+  'Bolivia': 'Bolivia',
+  'Venezuela': 'Venezuela',
+  'Qatar': 'Qatar',
+  'Iraq': 'Iraq',
+  'Saudi Arabia': 'Saudi Arabia',
+  'Jordan': 'Jordan',
+  'Lebanon': 'Lebanon',
+  'Oman': 'Oman',
+  'Uzbekistan': 'Uzbekistan',
+  'Iran': 'Iran',
+  'Syria': 'Syria',
+  'China': 'China',
+  'India': 'India',
+  'Thailand': 'Thailand',
+  'Vietnam': 'Vietnam',
+  'Malaysia': 'Malaysia',
+  'Indonesia': 'Indonesia',
+  'Philippines': 'Philippines',
+  'Singapore': 'Singapore',
+  'New Caledonia': 'New Caledonia',
+  'Tahiti': 'Tahiti',
+  'Fiji': 'Fiji',
+  'Papua New Guinea': 'Papua New Guinea',
 };
 
 function normalizeTeamName(name: string): string {
-  return TEAM_NAME_MAP[name] ?? name;
+  const trimmed = name.trim();
+  if (TEAM_NAME_MAP[trimmed]) return TEAM_NAME_MAP[trimmed];
+  const lower = trimmed.toLowerCase();
+  for (const [key, val] of Object.entries(TEAM_NAME_MAP)) {
+    if (key.toLowerCase() === lower) return val;
+  }
+  return trimmed;
 }
 
 // ── Match lookup — find our DB record by team names ─────────────
@@ -151,18 +241,23 @@ async function findMatchInDB(
     const away = teamMap.get(match.awayTeamId);
     if (!home || !away) continue;
 
+    const homeNameLower = home.name.toLowerCase();
+    const awayNameLower = away.name.toLowerCase();
+    const normHomeLower = normHome.toLowerCase();
+    const normAwayLower = normAway.toLowerCase();
+
     // Direct match
     if (
-      (home.name === normHome || home.nameAr === normHome) &&
-      (away.name === normAway || away.nameAr === normAway)
+      (homeNameLower === normHomeLower || (home.nameAr && home.nameAr === normHome)) &&
+      (awayNameLower === normAwayLower || (away.nameAr && away.nameAr === normAway))
     ) {
       return { id: match.id, status: match.status, isReversed: false };
     }
 
     // Reversed match (neutral venue swap)
     if (
-      (home.name === normAway || home.nameAr === normAway) &&
-      (away.name === normHome || away.nameAr === normHome)
+      (homeNameLower === normAwayLower || (home.nameAr && home.nameAr === normAway)) &&
+      (awayNameLower === normHomeLower || (away.nameAr && away.nameAr === normHome))
     ) {
       return { id: match.id, status: match.status, isReversed: true };
     }

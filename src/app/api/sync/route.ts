@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import { syncResults } from "@/lib/sync";
 
+function verifyAdmin(request: Request): boolean {
+  const token = request.headers.get("X-Admin-Token");
+  const expectedToken = (globalThis as any).ADMIN_TOKEN || process.env.ADMIN_TOKEN;
+  return !!token && token === expectedToken;
+}
+
 export async function POST(request: Request) {
   try {
+    if (!verifyAdmin(request)) {
+      return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+    }
+
     const startTime = Date.now();
     const report = await syncResults('admin');
     const elapsed = Date.now() - startTime;
