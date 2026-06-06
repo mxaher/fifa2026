@@ -11,11 +11,20 @@ export const users = sqliteTable("users", {
   totalPoints: integer("total_points").default(0),
   isAdmin: integer("is_admin", { mode: "boolean" }).default(false),
   banned: integer("banned", { mode: "boolean" }).default(false),
+  department: text("department"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 }, (table) => [
   uniqueIndex("users_email_unique").on(table.email),
 ]);
+
+// Company departments
+export const departments = sqliteTable("departments", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  nameAr: text("name_ar"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
 
 // 48 teams in 12 groups
 export const teams = sqliteTable("teams", {
@@ -85,3 +94,4 @@ export type Team = typeof teams.$inferSelect;
 export type Match = typeof matches.$inferSelect;
 export type Prediction = typeof predictions.$inferSelect;
 export type SyncLogEntry = typeof syncLog.$inferSelect;
+export type Department = typeof departments.$inferSelect;

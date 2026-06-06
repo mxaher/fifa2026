@@ -7,12 +7,18 @@ const AVATARS = ["⚽", "🏆", "🎯", "🥅", "🎪", "🌟", "💪", "🔥", 
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password } = await request.json();
-    if (!name || !email || !password) {
-      return NextResponse.json({ error: "جميع الحقول مطلوبة" }, { status: 400 });
+    const { name, email, password, department } = await request.json();
+    if (!name || !email || !password || !department) {
+      return NextResponse.json({ error: "جميع الحقول مطلوبة (الاسم، البريد، القسم، كلمة المرور)" }, { status: 400 });
     }
 
     const db = getClient();
+
+    // Verify department exists
+    const dept = await db.select().from(schema.departments).where(eq(schema.departments.id, department)).limit(1);
+    if (dept.length === 0) {
+      return NextResponse.json({ error: "القسم غير موجود" }, { status: 400 });
+    }
 
     // Check if email already exists
     const existing = await db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1);
@@ -32,6 +38,7 @@ export async function POST(request: Request) {
       totalPoints: 0,
       isAdmin: false,
       banned: false,
+      department,
     }).returning();
 
     const user = result[0];
@@ -44,6 +51,7 @@ export async function POST(request: Request) {
         totalPoints: user.totalPoints,
         isAdmin: false,
         banned: false,
+        department: user.department,
       },
     });
   } catch (error) {

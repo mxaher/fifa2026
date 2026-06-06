@@ -37,6 +37,7 @@ export async function GET(request: Request) {
       totalPoints: u.totalPoints ?? 0,
       isAdmin: u.isAdmin ?? false,
       banned: u.banned ?? false,
+      department: u.department,
       predictionCount: predMap.get(u.id) ?? 0,
       createdAt: u.createdAt,
     }));
@@ -94,7 +95,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
-    const { id, name, email, avatarEmoji, isAdmin, banned, password } = await request.json();
+    const { id, name, email, avatarEmoji, isAdmin, banned, password, department } = await request.json();
     if (!id) {
       return NextResponse.json({ error: "User ID مطلوب" }, { status: 400 });
     }
@@ -107,6 +108,7 @@ export async function PUT(request: Request) {
     if (avatarEmoji !== undefined) updateData.avatarEmoji = avatarEmoji;
     if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
     if (banned !== undefined) updateData.banned = banned;
+    if (department !== undefined) updateData.department = department;
 
     if (password) {
       const { hash, salt } = await hashPassword(password);

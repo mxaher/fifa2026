@@ -13,6 +13,13 @@ interface User {
   email: string;
   avatarEmoji: string | null;
   totalPoints: number;
+  department?: string | null;
+}
+
+interface Department {
+  id: string;
+  name: string;
+  nameAr: string | null;
 }
 
 interface Team {
@@ -181,8 +188,18 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [department, setDepartment] = useState('');
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isRegister) {
+      fetch('/api/departments').then(r => r.json()).then(d => {
+        if (d.departments) setDepartments(d.departments);
+      }).catch(() => {});
+    }
+  }, [isRegister]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +208,7 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
 
     try {
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-      const body = isRegister ? { name, email, password } : { email, password };
+      const body = isRegister ? { name, email, password, department } : { email, password };
       const data = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
 
       if (data.error) {
@@ -238,6 +255,18 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
               className="h-11" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
               placeholder="example@almarshad.com" dir="ltr" />
           </div>
+          {isRegister && (
+            <div>
+              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>القسم</label>
+              <select value={department} onChange={e => setDepartment(e.target.value)} required
+                className="w-full h-11 px-3 rounded-lg text-sm" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                <option value="">اختر القسم...</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.id}>{d.nameAr || d.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>كلمة المرور</label>
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required
@@ -303,6 +332,7 @@ function Header({ user, activeTab, onTabChange, onLogout }: { user: User; active
           <span className="hidden sm:inline text-sm" style={{ color: 'var(--text-secondary)' }}>
             {user.avatarEmoji} {user.name}
           </span>
+          {user.department && <span className="hidden lg:inline text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(79,195,247,0.15)', color: 'var(--wc-sky)' }}>{user.department}</span>}
           <span className="hidden sm:inline font-bebas text-sm" style={{ color: 'var(--wc-gold)' }}>{user.totalPoints} pts</span>
 
           <Button variant="ghost" size="sm" onClick={onLogout} className="hidden md:inline-flex text-xs"
@@ -624,7 +654,7 @@ function LeaderboardView({ user }: { user: User }) {
               <tr key={entry.id} className="transition-colors"
                 style={{
                   background: entry.id === user.id ? 'rgba(79,195,247,0.08)' : 'transparent',
-                  borderStart: entry.id === user.id ? '3px solid var(--wc-sky)' : 'none',
+                  borderInlineStart: entry.id === user.id ? '3px solid var(--wc-sky)' : 'none',
                 }}>
                 <td className="px-3 py-2 font-bebas" style={{ color: entry.rank <= 3 ? 'var(--wc-gold)' : 'var(--text-muted)' }}>
                   {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank}
@@ -835,12 +865,13 @@ function RulesView() {
 
 /* ─── Admin Panel ─── */
 function AdminPanel({ adminToken }: { adminToken: string }) {
-  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results'>('users');
+  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results' | 'departments'>('users');
 
   const tabs = [
     { id: 'users' as const, label: '👥 المستخدمين', icon: Users },
     { id: 'matches' as const, label: '⚽ المباريات', icon: Swords },
     { id: 'results' as const, label: '📊 النتائج', icon: BarChart3 },
+    { id: 'departments' as const, label: '🏢 الأقسام', icon: ScrollText },
   ];
 
   return (
@@ -869,24 +900,25 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
       {adminTab === 'users' && <AdminUsersTab adminToken={adminToken} />}
       {adminTab === 'matches' && <AdminMatchesTab adminToken={adminToken} />}
       {adminTab === 'results' && <AdminResultsTab adminToken={adminToken} />}
+      {adminTab === 'departments' && <AdminDepartmentsTab adminToken={adminToken} />}
     </div>
   );
 }
 
-/* ─── Admin Users Tab ─── */
-function AdminUsersTab({ adminToken }: { adminToken: string }) {
-  const [users, setUsers] = useState<any[]>([]);
+/* ─── Admin Departments Tab ─── */
+function AdminDepartmentsTab({ adminToken }: { adminToken: string }) {
+  const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editingDept, setEditingDept] = useState<any>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', avatarEmoji: '⚽' });
+  const [newDept, setNewDept] = useState({ name: '', nameAr: '' });
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const fetchUsers = async () => {
+  const fetchDepartments = async () => {
     try {
-      const res = await fetch('/api/admin/users', { headers: { 'X-Admin-Token': adminToken } });
+      const res = await fetch('/api/admin/departments', { headers: { 'X-Admin-Token': adminToken } });
       const data = await res.json();
-      if (data.users) setUsers(data.users);
+      if (data.departments) setDepartments(data.departments);
     } catch {}
     setLoading(false);
   };
@@ -895,9 +927,206 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
     let active = true;
     (async () => {
       try {
-        const res = await fetch('/api/admin/users', { headers: { 'X-Admin-Token': adminToken } });
+        const res = await fetch('/api/admin/departments', { headers: { 'X-Admin-Token': adminToken } });
         const data = await res.json();
-        if (active && data.users) setUsers(data.users);
+        if (active && data.departments) setDepartments(data.departments);
+      } catch {}
+      if (active) setLoading(false);
+    })();
+    return () => { active = false; };
+  }, [adminToken]);
+
+  const showResult = (success: boolean, message: string) => {
+    setResult({ success, message });
+    setTimeout(() => setResult(null), 3000);
+  };
+
+  const handleAddDept = async () => {
+    if (!newDept.name) return;
+    try {
+      const res = await fetch('/api/admin/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify(newDept),
+      });
+      const data = await res.json();
+      if (data.department) {
+        showResult(true, `تم إضافة ${newDept.name}`);
+        setNewDept({ name: '', nameAr: '' });
+        setShowAddForm(false);
+        fetchDepartments();
+      } else {
+        showResult(false, data.error || 'خطأ');
+      }
+    } catch { showResult(false, 'خطأ في الاتصال'); }
+  };
+
+  const handleUpdateDept = async () => {
+    if (!editingDept) return;
+    try {
+      const res = await fetch('/api/admin/departments', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify(editingDept),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult(true, 'تم التحديث');
+        setEditingDept(null);
+        fetchDepartments();
+      } else {
+        showResult(false, data.error || 'خطأ');
+      }
+    } catch { showResult(false, 'خطأ في الاتصال'); }
+  };
+
+  const handleDeleteDept = async (dept: any) => {
+    if (!confirm(`هل أنت متأكد من حذف "${dept.nameAr || dept.name}"؟`)) return;
+    try {
+      const res = await fetch(`/api/admin/departments?id=${dept.id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Token': adminToken },
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult(true, 'تم الحذف');
+        fetchDepartments();
+      } else {
+        showResult(false, data.error || 'خطأ');
+      }
+    } catch { showResult(false, 'خطأ في الاتصال'); }
+  };
+
+  if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
+
+  return (
+    <div className="space-y-4">
+      {result && (
+        <div className="p-3 rounded-xl text-sm font-medium"
+          style={{ background: result.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${result.success ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`, color: result.success ? '#22c55e' : '#ef4444' }}>
+          {result.message}
+        </div>
+      )}
+
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>الأقسام ({departments.length})</h3>
+          <Button onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+            style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+            <Plus className="h-4 w-4" /> إضافة قسم
+          </Button>
+        </div>
+
+        {showAddForm && (
+          <div className="mb-4 p-4 rounded-lg space-y-3" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+            <div className="grid grid-cols-2 gap-3">
+              <Input value={newDept.name} onChange={e => setNewDept({ ...newDept, name: e.target.value })}
+                placeholder="English name" dir="ltr" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              <Input value={newDept.nameAr} onChange={e => setNewDept({ ...newDept, nameAr: e.target.value })}
+                placeholder="الاسم بالعربي" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleAddDept}
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+                <Save className="h-4 w-4 inline ml-1" /> حفظ
+              </Button>
+              <Button onClick={() => setShowAddForm(false)} variant="ghost"
+                className="px-4 py-2 rounded-lg text-sm" style={{ color: 'var(--text-muted)' }}>
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-color)' }}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr style={{ background: 'rgba(255,215,0,0.1)' }}>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>المعرّف</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>الاسم (EN)</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>الاسم (AR)</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {departments.map(d => (
+              <tr key={d.id} style={{ borderTop: '1px solid var(--border-color)' }}>
+                <td className="px-3 py-2 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{d.id}</td>
+                <td className="px-3 py-2">
+                  {editingDept?.id === d.id ? (
+                    <Input value={editingDept.name} onChange={e => setEditingDept({ ...editingDept, name: e.target.value })}
+                      className="h-8 text-xs" dir="ltr" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+                  ) : d.name}
+                </td>
+                <td className="px-3 py-2">
+                  {editingDept?.id === d.id ? (
+                    <Input value={editingDept.nameAr || ''} onChange={e => setEditingDept({ ...editingDept, nameAr: e.target.value })}
+                      className="h-8 text-xs" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+                  ) : d.nameAr || '-'}
+                </td>
+                <td className="px-3 py-2">
+                  {editingDept?.id === d.id ? (
+                    <div className="flex gap-1">
+                      <button onClick={handleUpdateDept} className="p-1 rounded" style={{ color: '#22c55e' }}><Save className="h-4 w-4" /></button>
+                      <button onClick={() => setEditingDept(null)} className="p-1 rounded" style={{ color: 'var(--text-muted)' }}><X className="h-4 w-4" /></button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      <button onClick={() => setEditingDept(d)} className="p-1 rounded" style={{ color: 'var(--wc-sky)' }}><Edit className="h-4 w-4" /></button>
+                      <button onClick={() => handleDeleteDept(d)} className="p-1 rounded" style={{ color: '#ef4444' }}><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Admin Users Tab ─── */
+function AdminUsersTab({ adminToken }: { adminToken: string }) {
+  const [users, setUsers] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', avatarEmoji: '⚽', department: '' });
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const fetchUsers = async () => {
+    try {
+      const [usersRes, deptRes] = await Promise.all([
+        fetch('/api/admin/users', { headers: { 'X-Admin-Token': adminToken } }),
+        fetch('/api/admin/departments', { headers: { 'X-Admin-Token': adminToken } }),
+      ]);
+      const data = await usersRes.json();
+      const deptData = await deptRes.json();
+      if (data.users) setUsers(data.users);
+      if (deptData.departments) setDepartments(deptData.departments);
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [usersRes, deptRes] = await Promise.all([
+          fetch('/api/admin/users', { headers: { 'X-Admin-Token': adminToken } }),
+          fetch('/api/admin/departments', { headers: { 'X-Admin-Token': adminToken } }),
+        ]);
+        const data = await usersRes.json();
+        const deptData = await deptRes.json();
+        if (active) {
+          if (data.users) setUsers(data.users);
+          if (deptData.departments) setDepartments(deptData.departments);
+        }
       } catch {}
       if (active) setLoading(false);
     })();
@@ -910,7 +1139,7 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
   };
 
   const handleAddUser = async () => {
-    if (!newUser.name || !newUser.email || !newUser.password) return;
+    if (!newUser.name || !newUser.email || !newUser.password || !newUser.department) return;
     try {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
@@ -920,7 +1149,7 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
       const data = await res.json();
       if (data.user) {
         showResult(true, `تم إضافة ${newUser.name}`);
-        setNewUser({ name: '', email: '', password: '', avatarEmoji: '⚽' });
+        setNewUser({ name: '', email: '', password: '', avatarEmoji: '⚽', department: '' });
         setShowAddForm(false);
         fetchUsers();
       } else {
@@ -1011,8 +1240,11 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                 placeholder="البريد" dir="ltr" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
               <Input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })}
                 placeholder="كلمة المرور" dir="ltr" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
-              <Input value={newUser.avatarEmoji} onChange={e => setNewUser({ ...newUser, avatarEmoji: e.target.value })}
-                placeholder="الإيموجي" className="w-20" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              <select value={newUser.department} onChange={e => setNewUser({ ...newUser, department: e.target.value })}
+                className="w-full h-10 px-3 rounded-lg text-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                <option value="">اختر القسم...</option>
+                {departments.map((d: any) => <option key={d.id} value={d.id}>{d.nameAr || d.name}</option>)}
+              </select>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleAddUser}
@@ -1030,12 +1262,14 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
       </div>
 
       {/* Users list */}
-      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-color)' }}>
+      <div className="rounded-xl" style={{ border: '1px solid var(--border-color)' }}>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr style={{ background: 'rgba(255,215,0,0.1)' }}>
               <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>المستخدم</th>
               <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>البريد</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>القسم</th>
               <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>النقاط</th>
               <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>توقعات</th>
               <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>الحالة</th>
@@ -1058,6 +1292,17 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                     <Input value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })}
                       className="h-8 text-xs" dir="ltr" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
                   ) : u.email}
+                </td>
+                <td className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {editingUser?.id === u.id ? (
+                    <select value={editingUser.department || ''} onChange={e => setEditingUser({ ...editingUser, department: e.target.value || null })}
+                      className="h-8 px-2 rounded text-xs" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                      <option value="">بدون قسم</option>
+                      {departments.map((d: any) => <option key={d.id} value={d.id}>{d.nameAr || d.name}</option>)}
+                    </select>
+                  ) : (
+                    departments.find((d: any) => d.id === u.department)?.nameAr || u.department || '-'
+                  )}
                 </td>
                 <td className="px-3 py-2 font-bebas" style={{ color: 'var(--wc-gold)' }}>{u.totalPoints}</td>
                 <td className="px-3 py-2" style={{ color: 'var(--text-muted)' }}>{u.predictionCount}</td>
@@ -1086,6 +1331,7 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,9 @@ export async function GET() {
 
     const allUsers = await db.select().from(schema.users).orderBy(desc(schema.users.totalPoints));
 
+    // Filter out admin users
+    const nonAdminUsers = allUsers.filter(u => !u.isAdmin);
+
     const allPredictions = await db.select().from(schema.predictions);
 
     // Build prediction stats per user
@@ -25,7 +28,7 @@ export async function GET() {
       else stats.pending++;
     }
 
-    const leaderboard = allUsers.map((user, index) => ({
+    const leaderboard = nonAdminUsers.map((user, index) => ({
       rank: index + 1,
       id: user.id,
       name: user.name,

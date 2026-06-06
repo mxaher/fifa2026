@@ -38,6 +38,7 @@ export async function POST(request: Request) {
         totalPoints: user.totalPoints,
         isAdmin: user.isAdmin ?? false,
         banned: user.banned ?? false,
+        department: user.department,
       },
     });
   } catch (error) {
