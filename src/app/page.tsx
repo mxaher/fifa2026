@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X, ScrollText } from 'lucide-react';
+import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X, ScrollText, Shield } from 'lucide-react';
 
 /* ─── Types ─── */
 interface User {
@@ -257,11 +257,6 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
             {isRegister ? 'لديك حساب؟ سجّل الدخول' : 'ليس لديك حساب؟ سجّل الآن'}
           </button>
         </div>
-
-        {/* Demo hint */}
-        <div className="mt-4 p-3 rounded-lg text-xs text-center" style={{ background: 'rgba(79,195,247,0.1)', color: 'var(--wc-sky)', border: '1px solid rgba(79,195,247,0.2)' }}>
-          تجربة: demo@almarshad.com / demo123
-        </div>
       </div>
     </div>
   );
@@ -269,11 +264,13 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
 
 /* ─── Header ─── */
 function Header({ user, activeTab, onTabChange, onLogout }: { user: User; activeTab: string; onTabChange: (t: string) => void; onLogout: () => void }) {
+  const isAdmin = user.email === 'admin@almarshad.com';
   const tabs = [
     { id: 'matches', label: '⚽ المباريات', icon: Swords },
     { id: 'predictions', label: '🎯 توقعاتي', icon: Target },
     { id: 'leaderboard', label: '🏆 المتصدرين', icon: Trophy },
     { id: 'rules', label: '📜 القواعد', icon: ScrollText },
+    ...(isAdmin ? [{ id: 'admin', label: '🛡️ الإدارة', icon: Shield }] : []),
   ];
 
   return (
@@ -836,15 +833,186 @@ function RulesView() {
   );
 }
 
+/* ─── Admin Panel ─── */
+function AdminPanel({ adminToken }: { adminToken: string }) {
+  const [matches, setMatches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMatch, setSelectedMatch] = useState('');
+  const [homeScore, setHomeScore] = useState('');
+  const [awayScore, setAwayScore] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [filter, setFilter] = useState('upcoming');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/result', { headers: { 'X-Admin-Token': adminToken } });
+        const data = await res.json();
+        if (data.matches) setMatches(data.matches);
+      } catch {}
+      setLoading(false);
+    })();
+  }, [adminToken]);
+
+  const filtered = matches.filter(m => {
+    if (filter === 'upcoming') return m.status === 'upcoming';
+    if (filter === 'finished') return m.status === 'finished';
+    return true;
+  });
+
+  const handleSubmit = async () => {
+    if (!selectedMatch || homeScore === '' || awayScore === '') return;
+    setSubmitting(true);
+    setResult(null);
+    try {
+      const res = await fetch('/api/admin/result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ matchId: selectedMatch, homeScore: parseInt(homeScore), awayScore: parseInt(awayScore) }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResult({ success: true, message: `تم تسجيل النتيجة: ${homeScore} - ${awayScore} | تم احتساب ${data.predictionsScored} توقعات` });
+        setSelectedMatch('');
+        setHomeScore('');
+        setAwayScore('');
+        // Refresh matches list
+        const refresh = await fetch('/api/admin/result', { headers: { 'X-Admin-Token': adminToken } });
+        const refreshData = await refresh.json();
+        if (refreshData.matches) setMatches(refreshData.matches);
+      } else {
+        setResult({ success: false, message: data.error || 'خطأ' });
+      }
+    } catch {
+      setResult({ success: false, message: 'خطأ في الاتصال' });
+    }
+    setSubmitting(false);
+  };
+
+  if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg, rgba(139,0,0,0.3), rgba(10,22,40,0.8), rgba(255,215,0,0.2))', border: '1px solid var(--border-color)' }}>
+        <div className="text-4xl mb-2">🛡️</div>
+        <h2 className="text-2xl font-black" style={{ color: 'var(--wc-gold)' }}>لوحة التحكم</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>تسجيل النتائج يدوياً في حال فشل الاتصال بالـ API</p>
+      </div>
+
+      {/* Manual result form */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--wc-gold)' }}>تسجيل نتيجة مباراة</h3>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>المباراة</label>
+            <select value={selectedMatch} onChange={e => setSelectedMatch(e.target.value)}
+              className="w-full h-11 px-3 rounded-lg text-sm"
+              style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+              <option value="">اختر مباراة...</option>
+              {filtered.map(m => (
+                <option key={m.id} value={m.id}>
+                  #{m.matchNumber} {m.homeTeam} vs {m.awayTeam} {m.status === 'finished' ? '(منتهية)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>نتيجة الفريق المضيف</label>
+              <Input type="number" min="0" max="20" value={homeScore} onChange={e => setHomeScore(e.target.value)}
+                className="h-11 text-center font-bebas text-xl"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                placeholder="0" />
+            </div>
+            <div className="flex items-end pb-1">
+              <span className="font-bebas text-2xl" style={{ color: 'var(--text-muted)' }}>-</span>
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>نتيجة الفريق الضيف</label>
+              <Input type="number" min="0" max="20" value={awayScore} onChange={e => setAwayScore(e.target.value)}
+                className="h-11 text-center font-bebas text-xl"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                placeholder="0" />
+            </div>
+          </div>
+
+          <Button onClick={handleSubmit} disabled={submitting || !selectedMatch || homeScore === '' || awayScore === ''}
+            className="w-full h-12 text-lg font-bold"
+            style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+            {submitting ? '...' : 'تسجيل النتيجة'}
+          </Button>
+        </div>
+
+        {result && (
+          <div className="mt-4 p-3 rounded-xl text-sm font-medium"
+            style={{
+              background: result.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+              border: `1px solid ${result.success ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+              color: result.success ? '#22c55e' : '#ef4444',
+            }}>
+            {result.message}
+          </div>
+        )}
+      </div>
+
+      {/* Matches list */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>جميع المباريات</h3>
+          <div className="flex gap-2">
+            {['all', 'upcoming', 'finished'].map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                className="px-3 py-1 rounded-full text-xs font-medium"
+                style={{
+                  background: filter === f ? 'rgba(255,215,0,0.15)' : 'var(--bg-primary)',
+                  color: filter === f ? 'var(--wc-gold)' : 'var(--text-muted)',
+                  border: `1px solid ${filter === f ? 'var(--wc-gold)' : 'var(--border-color)'}`,
+                }}>
+                {f === 'all' ? 'الكل' : f === 'upcoming' ? 'قادمة' : 'منتهية'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {filtered.map(m => (
+            <div key={m.id} className="flex items-center justify-between p-3 rounded-lg"
+              style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+              <div className="flex items-center gap-3">
+                <span className="font-bebas text-sm" style={{ color: 'var(--text-muted)' }}>#{m.matchNumber}</span>
+                <span className="text-sm font-medium">{m.homeTeam} vs {m.awayTeam}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {m.status === 'finished' ? (
+                  <span className="font-bebas text-lg" style={{ color: 'var(--wc-gold)' }}>{m.homeScore} - {m.awayScore}</span>
+                ) : (
+                  <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(79,195,247,0.15)', color: 'var(--wc-sky)' }}>
+                    {m.groupLetter ? `المجموعة ${m.groupLetter}` : 'إقصائي'}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main App ─── */
 export default function Home() {
   // Initialize user from localStorage on mount
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('matches');
   const [loading, setLoading] = useState(true);
+  const [adminToken, setAdminToken] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('fifa26_user');
+    const savedToken = localStorage.getItem('fifa26_admin_token') || '';
     // Use a micro-task to avoid synchronous setState in effect
     queueMicrotask(() => {
       try {
@@ -852,6 +1020,7 @@ export default function Home() {
           setUser(JSON.parse(saved));
         }
       } catch {}
+      setAdminToken(savedToken);
       setLoading(false);
     });
   }, []);
@@ -864,6 +1033,7 @@ export default function Home() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('fifa26_user');
+    setActiveTab('matches');
   };
 
   if (loading) {
@@ -884,6 +1054,27 @@ export default function Home() {
         {activeTab === 'predictions' && <PredictionsView user={user} />}
         {activeTab === 'leaderboard' && <LeaderboardView user={user} />}
         {activeTab === 'rules' && <RulesView />}
+        {activeTab === 'admin' && user.email === 'admin@almarshad.com' && (
+          adminToken ? (
+            <AdminPanel adminToken={adminToken} />
+          ) : (
+            <div className="max-w-md mx-auto mt-20 p-8 rounded-2xl text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+              <div className="text-4xl mb-4">🛡️</div>
+              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--wc-gold)' }}>لوحة التحكم</h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>أدخل رمز الإدارة للوصول</p>
+              <Input type="password" value={adminToken} onChange={e => setAdminToken(e.target.value)}
+                className="h-11 mb-3" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                placeholder="أدخل رمز الإدارة" dir="ltr"
+                onKeyDown={e => { if (e.key === 'Enter' && adminToken) localStorage.setItem('fifa26_admin_token', adminToken); }} />
+              <Button onClick={() => { localStorage.setItem('fifa26_admin_token', adminToken); }}
+                disabled={!adminToken}
+                className="w-full h-11 font-bold"
+                style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+                دخول
+              </Button>
+            </div>
+          )
+        )}
       </main>
       <footer className="mt-auto py-4 text-center text-xs" style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)' }}>
         ملك التوقعات - فيفا٢٦ © ٢٠٢٦ | مجموعة المرشد القابضة

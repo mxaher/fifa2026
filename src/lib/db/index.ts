@@ -1,29 +1,31 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { drizzle as drizzleD1 } from "drizzle-orm/d1";
 import { drizzle as drizzleLibSQL } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
 import * as schema from "./schema";
 
 /**
- * Environment type for Cloudflare Workers with D1 binding.
- * When running on Workers, the D1 database is accessed via `env.DB`.
+ * Get the D1 binding from the Cloudflare Workers environment.
+ * Uses @opennextjs/cloudflare's getCloudflareContext() to access env bindings.
  */
-export interface CloudflareEnv {
-  DB: D1Database;
-  [key: string]: unknown;
+function getD1Binding() {
+  const { env } = getCloudflareContext();
+  const db = (env as Record<string, unknown>).DB;
+  if (!db) {
+    throw new Error(
+      "D1 binding not found. Ensure DB is declared in wrangler.toml and you're running on Cloudflare Workers."
+    );
+  }
+  return db;
 }
 
 /**
  * Get a Drizzle ORM client for Cloudflare D1 (production / Workers runtime).
  *
- * This function accepts the Worker env object and returns a Drizzle client
- * initialized with the D1 binding. It is created per-request, never at
- * module level.
- *
- * @param env - The Worker environment context containing the D1 binding
  * @returns Drizzle ORM client connected to D1
  */
-export function getDB(env: CloudflareEnv) {
-  return drizzleD1(env.DB, { schema });
+export function getD1DB() {
+  return drizzleD1(getD1Binding(), { schema });
 }
 
 /**
@@ -31,10 +33,6 @@ export function getDB(env: CloudflareEnv) {
  *
  * Uses @libsql/client which is a pure JavaScript SQLite client — no native
  * bindings required. Fully compatible with edge runtimes.
- *
- * Supports both:
- * - Local file: "file:./db/custom.db"
- * - Remote Turso: "libsql://your-db.turso.io"
  *
  * @param dbUrl - Database URL (file path or libsql:// remote URL)
  * @param authToken - Optional auth token for remote Turso databases
@@ -52,17 +50,20 @@ export function getLocalDB(dbUrl?: string, authToken?: string) {
 /**
  * Convenience: Get a DB client appropriate for the current environment.
  *
- * - If `env` is provided with a D1 binding (Cloudflare Workers), uses D1.
- * - Otherwise, falls back to libSQL with local SQLite or Turso.
+ * - If D1 binding exists (Cloudflare Workers), uses D1.
+ * - Otherwise, falls back to libSQL with local SQLite.
  *
- * @param env - Optional Worker environment context
  * @returns Drizzle ORM client
  */
-export function getClient(env?: CloudflareEnv) {
-  if (env?.DB) {
-    return getDB(env);
+export function getClient() {
+  try {
+    const { env } = getCloudflareContext();
+    if ((env as Record<string, unknown>).DB) {
+      return getD1DB();
+    }
+  } catch {
+    // Not in Cloudflare context — fall through to local
   }
-
   return getLocalDB();
 }
 

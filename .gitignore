@@ -40,6 +40,9 @@ prisma/
 # drizzle local migrations (generated per-environment)
 drizzle/
 
+# OpenNext build output
+.open-next/
+
 # vercel
 .vercel
 

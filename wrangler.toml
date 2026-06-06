@@ -1,27 +1,29 @@
 #:schema node_modules/wrangler/config-schema.json
+main = ".open-next/worker.js"
 name = "fifa26-predictions"
-compatibility_date = "2024-12-01"
-compatibility_flags = ["nodejs_compat"]
+account_id = "a76a117ad4225d384a4a2dc22ebece83"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
-# ──────────────────────────────────────────────────────────
-# Cloudflare Workers + D1 configuration
-# ──────────────────────────────────────────────────────────
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
 
-# D1 Database binding — accessible as env.DB in Workers
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "fifa26-predictions"
+
+[images]
+binding = "IMAGES"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "fifa26-predictions-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "a1de6e9f-732f-43e3-8882-7502dace5e12"
 
-# ──────────────────────────────────────────────────────────
-# Non-secret environment variables
-# ──────────────────────────────────────────────────────────
 [vars]
 NODE_ENV = "production"
 
-# ── Cron Triggers ─────────────────────────────────────────────
-# Runs every 5 minutes during tournament hours (UTC 12:00-23:59)
-# and every 30 minutes outside match hours to save on invocations.
 [triggers]
 crons = [
   "*/5 12-23 * 6-7 *",
