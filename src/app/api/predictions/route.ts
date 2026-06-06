@@ -43,6 +43,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "جميع الحقول مطلوبة" }, { status: 400 });
     }
 
+    // Block admin from making predictions
+    const userResult = await db.select().from(schema.users).where(eq(schema.users.id, userId)).limit(1);
+    if (userResult.length > 0 && userResult[0].isAdmin) {
+      return NextResponse.json({ error: "المشرف لا يمكنه التوقع على المباريات" }, { status: 403 });
+    }
+
     // Check if match is still upcoming
     const matchResult = await db.select().from(schema.matches).where(eq(schema.matches.id, matchId)).limit(1);
     if (matchResult.length === 0) {

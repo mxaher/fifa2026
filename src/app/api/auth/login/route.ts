@@ -18,6 +18,11 @@ export async function POST(request: Request) {
     }
 
     const user = users[0];
+
+    if (user.banned) {
+      return NextResponse.json({ error: "تم حظر حسابك. تواصل مع الإدارة" }, { status: 403 });
+    }
+
     const valid = await verifyPassword(password, user.passwordHash, user.salt);
 
     if (!valid) {
@@ -25,7 +30,15 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      user: { id: user.id, name: user.name, email: user.email, avatarEmoji: user.avatarEmoji, totalPoints: user.totalPoints },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatarEmoji: user.avatarEmoji,
+        totalPoints: user.totalPoints,
+        isAdmin: user.isAdmin ?? false,
+        banned: user.banned ?? false,
+      },
     });
   } catch (error) {
     console.error("Login error:", error);

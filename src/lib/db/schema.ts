@@ -9,6 +9,8 @@ export const users = sqliteTable("users", {
   salt: text("salt").notNull(),
   avatarEmoji: text("avatar_emoji").default("⚽"),
   totalPoints: integer("total_points").default(0),
+  isAdmin: integer("is_admin", { mode: "boolean" }).default(false),
+  banned: integer("banned", { mode: "boolean" }).default(false),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 }, (table) => [

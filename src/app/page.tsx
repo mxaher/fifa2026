@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X, ScrollText, Shield } from 'lucide-react';
+import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X, ScrollText, Shield, Users, BarChart3, UserPlus, Ban, Trash2, Edit, Save, Plus } from 'lucide-react';
 
 /* ─── Types ─── */
 interface User {
@@ -835,6 +835,523 @@ function RulesView() {
 
 /* ─── Admin Panel ─── */
 function AdminPanel({ adminToken }: { adminToken: string }) {
+  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results'>('users');
+
+  const tabs = [
+    { id: 'users' as const, label: '👥 المستخدمين', icon: Users },
+    { id: 'matches' as const, label: '⚽ المباريات', icon: Swords },
+    { id: 'results' as const, label: '📊 النتائج', icon: BarChart3 },
+  ];
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg, rgba(139,0,0,0.3), rgba(10,22,40,0.8), rgba(255,215,0,0.2))', border: '1px solid var(--border-color)' }}>
+        <div className="text-4xl mb-2">🛡️</div>
+        <h2 className="text-2xl font-black" style={{ color: 'var(--wc-gold)' }}>لوحة التحكم</h2>
+      </div>
+
+      {/* Admin sub-tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {tabs.map(tab => (
+          <button key={tab.id} onClick={() => setAdminTab(tab.id)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all"
+            style={{
+              background: adminTab === tab.id ? 'rgba(255,215,0,0.15)' : 'var(--bg-card)',
+              color: adminTab === tab.id ? 'var(--wc-gold)' : 'var(--text-muted)',
+              border: `1px solid ${adminTab === tab.id ? 'var(--wc-gold)' : 'var(--border-color)'}`,
+            }}>
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {adminTab === 'users' && <AdminUsersTab adminToken={adminToken} />}
+      {adminTab === 'matches' && <AdminMatchesTab adminToken={adminToken} />}
+      {adminTab === 'results' && <AdminResultsTab adminToken={adminToken} />}
+    </div>
+  );
+}
+
+/* ─── Admin Users Tab ─── */
+function AdminUsersTab({ adminToken }: { adminToken: string }) {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', avatarEmoji: '⚽' });
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/admin/users', { headers: { 'X-Admin-Token': adminToken } });
+      const data = await res.json();
+      if (data.users) setUsers(data.users);
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/users', { headers: { 'X-Admin-Token': adminToken } });
+        const data = await res.json();
+        if (active && data.users) setUsers(data.users);
+      } catch {}
+      if (active) setLoading(false);
+    })();
+    return () => { active = false; };
+  }, [adminToken]);
+
+  const showResult = (success: boolean, message: string) => {
+    setResult({ success, message });
+    setTimeout(() => setResult(null), 3000);
+  };
+
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) return;
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify(newUser),
+      });
+      const data = await res.json();
+      if (data.user) {
+        showResult(true, `تم إضافة ${newUser.name}`);
+        setNewUser({ name: '', email: '', password: '', avatarEmoji: '⚽' });
+        setShowAddForm(false);
+        fetchUsers();
+      } else {
+        showResult(false, data.error || 'خطأ');
+      }
+    } catch { showResult(false, 'خطأ في الاتصال'); }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify(editingUser),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult(true, 'تم التحديث');
+        setEditingUser(null);
+        fetchUsers();
+      } else {
+        showResult(false, data.error || 'خطأ');
+      }
+    } catch { showResult(false, 'خطأ في الاتصال'); }
+  };
+
+  const handleToggleBan = async (user: any) => {
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ id: user.id, banned: !user.banned }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult(true, user.banned ? `تم فتح حظر ${user.name}` : `تم حظر ${user.name}`);
+        fetchUsers();
+      }
+    } catch { showResult(false, 'خطأ في الاتصال'); }
+  };
+
+  const handleDeleteUser = async (user: any) => {
+    if (!confirm(`هل أنت متأكد من حذف ${user.name}؟`)) return;
+    try {
+      const res = await fetch(`/api/admin/users?id=${user.id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Token': adminToken },
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult(true, `تم حذف ${user.name}`);
+        fetchUsers();
+      } else {
+        showResult(false, data.error || 'خطأ');
+      }
+    } catch { showResult(false, 'خطأ في الاتصال'); }
+  };
+
+  if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
+
+  return (
+    <div className="space-y-4">
+      {result && (
+        <div className="p-3 rounded-xl text-sm font-medium"
+          style={{ background: result.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${result.success ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`, color: result.success ? '#22c55e' : '#ef4444' }}>
+          {result.message}
+        </div>
+      )}
+
+      {/* Add user button + form */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>المستخدمين ({users.length})</h3>
+          <Button onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+            style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+            <UserPlus className="h-4 w-4" /> إضافة مستخدم
+          </Button>
+        </div>
+
+        {showAddForm && (
+          <div className="mb-4 p-4 rounded-lg space-y-3" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+            <div className="grid grid-cols-2 gap-3">
+              <Input value={newUser.name} onChange={e => setNewUser({ ...newUser, name: e.target.value })}
+                placeholder="الاسم" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              <Input value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                placeholder="البريد" dir="ltr" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              <Input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                placeholder="كلمة المرور" dir="ltr" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              <Input value={newUser.avatarEmoji} onChange={e => setNewUser({ ...newUser, avatarEmoji: e.target.value })}
+                placeholder="الإيموجي" className="w-20" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleAddUser}
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+                <Save className="h-4 w-4 inline ml-1" /> حفظ
+              </Button>
+              <Button onClick={() => setShowAddForm(false)} variant="ghost"
+                className="px-4 py-2 rounded-lg text-sm" style={{ color: 'var(--text-muted)' }}>
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Users list */}
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-color)' }}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr style={{ background: 'rgba(255,215,0,0.1)' }}>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>المستخدم</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>البريد</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>النقاط</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>توقعات</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>الحالة</th>
+              <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(u => (
+              <tr key={u.id} style={{ borderTop: '1px solid var(--border-color)', opacity: u.banned ? 0.5 : 1 }}>
+                <td className="px-3 py-2">
+                  {editingUser?.id === u.id ? (
+                    <Input value={editingUser.name} onChange={e => setEditingUser({ ...editingUser, name: e.target.value })}
+                      className="h-8 text-xs" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+                  ) : (
+                    <span>{u.avatarEmoji} {u.name} {u.isAdmin && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,215,0,0.2)', color: 'var(--wc-gold)' }}>admin</span>}</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {editingUser?.id === u.id ? (
+                    <Input value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })}
+                      className="h-8 text-xs" dir="ltr" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+                  ) : u.email}
+                </td>
+                <td className="px-3 py-2 font-bebas" style={{ color: 'var(--wc-gold)' }}>{u.totalPoints}</td>
+                <td className="px-3 py-2" style={{ color: 'var(--text-muted)' }}>{u.predictionCount}</td>
+                <td className="px-3 py-2">
+                  {u.banned ? (
+                    <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>محظور</span>
+                  ) : (
+                    <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>نشط</span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {editingUser?.id === u.id ? (
+                    <div className="flex gap-1">
+                      <button onClick={handleUpdateUser} className="p-1 rounded" style={{ color: '#22c55e' }}><Save className="h-4 w-4" /></button>
+                      <button onClick={() => setEditingUser(null)} className="p-1 rounded" style={{ color: 'var(--text-muted)' }}><X className="h-4 w-4" /></button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      <button onClick={() => setEditingUser(u)} className="p-1 rounded" style={{ color: 'var(--wc-sky)' }}><Edit className="h-4 w-4" /></button>
+                      {!u.isAdmin && <button onClick={() => handleToggleBan(u)} className="p-1 rounded" style={{ color: u.banned ? '#22c55e' : '#f59e0b' }}><Ban className="h-4 w-4" /></button>}
+                      {!u.isAdmin && <button onClick={() => handleDeleteUser(u)} className="p-1 rounded" style={{ color: '#ef4444' }}><Trash2 className="h-4 w-4" /></button>}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Admin Matches Tab ─── */
+function AdminMatchesTab({ adminToken }: { adminToken: string }) {
+  const [matches, setMatches] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingMatch, setEditingMatch] = useState<any>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newMatch, setNewMatch] = useState({ matchNumber: 0, stage: 'group', groupLetter: '', homeTeamId: '', awayTeamId: '', kickoff: '', venue: '' });
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [filter, setFilter] = useState('all');
+
+  const fetchData = async () => {
+    try {
+      const [matchesRes, teamsRes] = await Promise.all([
+        fetch('/api/admin/matches', { headers: { 'X-Admin-Token': adminToken } }),
+        fetch('/api/matches'),
+      ]);
+      const matchesData = await matchesRes.json();
+      const teamsData = await teamsRes.json();
+      if (matchesData.matches) setMatches(matchesData.matches);
+      if (teamsData.matches) {
+        const allTeams = new Map();
+        teamsData.matches.forEach((m: any) => {
+          if (m.homeTeam) allTeams.set(m.homeTeam.id, m.homeTeam);
+          if (m.awayTeam) allTeams.set(m.awayTeam.id, m.awayTeam);
+        });
+        setTeams(Array.from(allTeams.values()));
+      }
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [matchesRes, teamsRes] = await Promise.all([
+          fetch('/api/admin/matches', { headers: { 'X-Admin-Token': adminToken } }),
+          fetch('/api/matches'),
+        ]);
+        const matchesData = await matchesRes.json();
+        const teamsData = await teamsRes.json();
+        if (active) {
+          if (matchesData.matches) setMatches(matchesData.matches);
+          if (teamsData.matches) {
+            const allTeams = new Map();
+            teamsData.matches.forEach((m: any) => {
+              if (m.homeTeam) allTeams.set(m.homeTeam.id, m.homeTeam);
+              if (m.awayTeam) allTeams.set(m.awayTeam.id, m.awayTeam);
+            });
+            setTeams(Array.from(allTeams.values()));
+          }
+        }
+      } catch {}
+      if (active) setLoading(false);
+    })();
+    return () => { active = false; };
+  }, [adminToken]);
+
+  const showResultMsg = (success: boolean, message: string) => {
+    setResult({ success, message });
+    setTimeout(() => setResult(null), 3000);
+  };
+
+  const filtered = matches.filter(m => {
+    if (filter === 'upcoming') return m.status === 'upcoming';
+    if (filter === 'finished') return m.status === 'finished';
+    return true;
+  });
+
+  const handleAddMatch = async () => {
+    if (!newMatch.homeTeamId || !newMatch.awayTeamId || !newMatch.kickoff) return;
+    try {
+      const res = await fetch('/api/admin/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ ...newMatch, matchNumber: newMatch.matchNumber || undefined }),
+      });
+      const data = await res.json();
+      if (data.match) {
+        showResultMsg(true, 'تمت إضافة المباراة');
+        setShowAddForm(false);
+        setNewMatch({ matchNumber: 0, stage: 'group', groupLetter: '', homeTeamId: '', awayTeamId: '', kickoff: '', venue: '' });
+        fetchData();
+      } else {
+        showResultMsg(false, data.error || 'خطأ');
+      }
+    } catch { showResultMsg(false, 'خطأ في الاتصال'); }
+  };
+
+  const handleUpdateMatch = async () => {
+    if (!editingMatch) return;
+    try {
+      const res = await fetch('/api/admin/matches', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify(editingMatch),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResultMsg(true, 'تم التحديث');
+        setEditingMatch(null);
+        fetchData();
+      } else {
+        showResultMsg(false, data.error || 'خطأ');
+      }
+    } catch { showResultMsg(false, 'خطأ في الاتصال'); }
+  };
+
+  const handleDeleteMatch = async (match: any) => {
+    if (!confirm(`هل أنت متأكد من حذف المباراة #${match.matchNumber}؟`)) return;
+    try {
+      const res = await fetch(`/api/admin/matches?id=${match.id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Token': adminToken },
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResultMsg(true, 'تم الحذف');
+        fetchData();
+      } else {
+        showResultMsg(false, data.error || 'خطأ');
+      }
+    } catch { showResultMsg(false, 'خطأ في الاتصال'); }
+  };
+
+  if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
+
+  return (
+    <div className="space-y-4">
+      {result && (
+        <div className="p-3 rounded-xl text-sm font-medium"
+          style={{ background: result.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${result.success ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`, color: result.success ? '#22c55e' : '#ef4444' }}>
+          {result.message}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>المباريات ({matches.length})</h3>
+          <div className="flex gap-2">
+            <div className="flex gap-1">
+              {['all', 'upcoming', 'finished'].map(f => (
+                <button key={f} onClick={() => setFilter(f)}
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{ background: filter === f ? 'rgba(255,215,0,0.15)' : 'var(--bg-primary)', color: filter === f ? 'var(--wc-gold)' : 'var(--text-muted)', border: `1px solid ${filter === f ? 'var(--wc-gold)' : 'var(--border-color)'}` }}>
+                  {f === 'all' ? 'الكل' : f === 'upcoming' ? 'قادمة' : 'منتهية'}
+                </button>
+              ))}
+            </div>
+            <Button onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+              <Plus className="h-4 w-4" /> مباراة جديدة
+            </Button>
+          </div>
+        </div>
+
+        {/* Add match form */}
+        {showAddForm && (
+          <div className="mb-4 p-4 rounded-lg space-y-3" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>رقم المباراة</label>
+                <Input type="number" value={newMatch.matchNumber || ''} onChange={e => setNewMatch({ ...newMatch, matchNumber: parseInt(e.target.value) || 0 })}
+                  placeholder="تلقائي" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>المجموعة</label>
+                <select value={newMatch.groupLetter} onChange={e => setNewMatch({ ...newMatch, groupLetter: e.target.value, stage: e.target.value ? 'group' : 'knockout' })}
+                  className="w-full h-10 px-3 rounded-lg text-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                  <option value="">إقصائي</option>
+                  {['A','B','C','D','E','F','G','H','I','J','K','L'].map(g => <option key={g} value={g}>المجموعة {g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>الملعب</label>
+                <Input value={newMatch.venue} onChange={e => setNewMatch({ ...newMatch, venue: e.target.value })}
+                  placeholder="الملعب" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>الفريق المضيف</label>
+                <select value={newMatch.homeTeamId} onChange={e => setNewMatch({ ...newMatch, homeTeamId: e.target.value })}
+                  className="w-full h-10 px-3 rounded-lg text-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                  <option value="">اختر...</option>
+                  {teams.map(t => <option key={t.id} value={t.id}>{t.flag} {t.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>الفريق الضيف</label>
+                <select value={newMatch.awayTeamId} onChange={e => setNewMatch({ ...newMatch, awayTeamId: e.target.value })}
+                  className="w-full h-10 px-3 rounded-lg text-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                  <option value="">اختر...</option>
+                  {teams.map(t => <option key={t.id} value={t.id}>{t.flag} {t.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>الموعد</label>
+                <Input type="datetime-local" value={newMatch.kickoff} onChange={e => setNewMatch({ ...newMatch, kickoff: e.target.value })}
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleAddMatch} className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+                <Save className="h-4 w-4 inline ml-1" /> حفظ
+              </Button>
+              <Button onClick={() => setShowAddForm(false)} variant="ghost" className="px-4 py-2 rounded-lg text-sm" style={{ color: 'var(--text-muted)' }}>إلغاء</Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Matches list */}
+      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-color)' }}>
+        <div className="max-h-[500px] overflow-y-auto">
+          {filtered.map(m => (
+            <div key={m.id} className="flex items-center justify-between p-3" style={{ borderBottom: '1px solid var(--border-color)' }}>
+              {editingMatch?.id === m.id ? (
+                <div className="flex-1 grid grid-cols-4 gap-2 items-center">
+                  <Input type="number" value={editingMatch.homeScore ?? ''} onChange={e => setEditingMatch({ ...editingMatch, homeScore: e.target.value === '' ? null : parseInt(e.target.value) })}
+                    placeholder="-" className="h-8 text-center font-bebas" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+                  <span className="text-center font-bebas text-lg" style={{ color: 'var(--text-muted)' }}>-</span>
+                  <Input type="number" value={editingMatch.awayScore ?? ''} onChange={e => setEditingMatch({ ...editingMatch, awayScore: e.target.value === '' ? null : parseInt(e.target.value) })}
+                    placeholder="-" className="h-8 text-center font-bebas" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+                  <div className="flex gap-1 justify-end">
+                    <button onClick={handleUpdateMatch} className="p-1 rounded" style={{ color: '#22c55e' }}><Save className="h-4 w-4" /></button>
+                    <button onClick={() => setEditingMatch(null)} className="p-1 rounded" style={{ color: 'var(--text-muted)' }}><X className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    <span className="font-bebas text-sm" style={{ color: 'var(--text-muted)' }}>#{m.matchNumber}</span>
+                    <span className="text-sm">{m.homeTeamName} vs {m.awayTeamName}</span>
+                    {m.groupLetter && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(79,195,247,0.15)', color: 'var(--wc-sky)' }}>{m.groupLetter}</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {m.status === 'finished' ? (
+                      <span className="font-bebas text-lg" style={{ color: 'var(--wc-gold)' }}>{m.homeScore} - {m.awayScore}</span>
+                    ) : (
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>قادمة</span>
+                    )}
+                    <div className="flex gap-1">
+                      <button onClick={() => setEditingMatch(m)} className="p-1 rounded" style={{ color: 'var(--wc-sky)' }}><Edit className="h-4 w-4" /></button>
+                      <button onClick={() => handleDeleteMatch(m)} className="p-1 rounded" style={{ color: '#ef4444' }}><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Admin Results Tab ─── */
+function AdminResultsTab({ adminToken }: { adminToken: string }) {
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMatch, setSelectedMatch] = useState('');
@@ -877,7 +1394,6 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
         setSelectedMatch('');
         setHomeScore('');
         setAwayScore('');
-        // Refresh matches list
         const refresh = await fetch('/api/admin/result', { headers: { 'X-Admin-Token': adminToken } });
         const refreshData = await refresh.json();
         if (refreshData.matches) setMatches(refreshData.matches);
@@ -893,110 +1409,56 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg, rgba(139,0,0,0.3), rgba(10,22,40,0.8), rgba(255,215,0,0.2))', border: '1px solid var(--border-color)' }}>
-        <div className="text-4xl mb-2">🛡️</div>
-        <h2 className="text-2xl font-black" style={{ color: 'var(--wc-gold)' }}>لوحة التحكم</h2>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>تسجيل النتائج يدوياً في حال فشل الاتصال بالـ API</p>
-      </div>
+    <div className="space-y-4">
+      {result && (
+        <div className="p-3 rounded-xl text-sm font-medium"
+          style={{ background: result.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${result.success ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`, color: result.success ? '#22c55e' : '#ef4444' }}>
+          {result.message}
+        </div>
+      )}
 
-      {/* Manual result form */}
+      {/* Result form */}
       <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
         <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--wc-gold)' }}>تسجيل نتيجة مباراة</h3>
-
         <div className="space-y-4">
           <div>
             <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>المباراة</label>
             <select value={selectedMatch} onChange={e => setSelectedMatch(e.target.value)}
-              className="w-full h-11 px-3 rounded-lg text-sm"
-              style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+              className="w-full h-11 px-3 rounded-lg text-sm" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
               <option value="">اختر مباراة...</option>
               {filtered.map(m => (
-                <option key={m.id} value={m.id}>
-                  #{m.matchNumber} {m.homeTeam} vs {m.awayTeam} {m.status === 'finished' ? '(منتهية)' : ''}
-                </option>
+                <option key={m.id} value={m.id}>#{m.matchNumber} {m.homeTeam} vs {m.awayTeam} {m.status === 'finished' ? '(منتهية)' : ''}</option>
               ))}
             </select>
           </div>
-
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>نتيجة الفريق المضيف</label>
-              <Input type="number" min="0" max="20" value={homeScore} onChange={e => setHomeScore(e.target.value)}
-                className="h-11 text-center font-bebas text-xl"
-                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                placeholder="0" />
-            </div>
-            <div className="flex items-end pb-1">
-              <span className="font-bebas text-2xl" style={{ color: 'var(--text-muted)' }}>-</span>
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>نتيجة الفريق الضيف</label>
-              <Input type="number" min="0" max="20" value={awayScore} onChange={e => setAwayScore(e.target.value)}
-                className="h-11 text-center font-bebas text-xl"
-                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                placeholder="0" />
+              <label className="block text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>النتيجة</label>
+              <div className="flex items-center gap-2">
+                <Input type="number" min="0" max="20" value={homeScore} onChange={e => setHomeScore(e.target.value)}
+                  className="h-11 text-center font-bebas text-xl" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} placeholder="0" />
+                <span className="font-bebas text-2xl" style={{ color: 'var(--text-muted)' }}>-</span>
+                <Input type="number" min="0" max="20" value={awayScore} onChange={e => setAwayScore(e.target.value)}
+                  className="h-11 text-center font-bebas text-xl" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} placeholder="0" />
+              </div>
             </div>
           </div>
-
           <Button onClick={handleSubmit} disabled={submitting || !selectedMatch || homeScore === '' || awayScore === ''}
-            className="w-full h-12 text-lg font-bold"
-            style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+            className="w-full h-12 text-lg font-bold" style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
             {submitting ? '...' : 'تسجيل النتيجة'}
           </Button>
         </div>
-
-        {result && (
-          <div className="mt-4 p-3 rounded-xl text-sm font-medium"
-            style={{
-              background: result.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-              border: `1px solid ${result.success ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
-              color: result.success ? '#22c55e' : '#ef4444',
-            }}>
-            {result.message}
-          </div>
-        )}
       </div>
 
-      {/* Matches list */}
-      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>جميع المباريات</h3>
-          <div className="flex gap-2">
-            {['all', 'upcoming', 'finished'].map(f => (
-              <button key={f} onClick={() => setFilter(f)}
-                className="px-3 py-1 rounded-full text-xs font-medium"
-                style={{
-                  background: filter === f ? 'rgba(255,215,0,0.15)' : 'var(--bg-primary)',
-                  color: filter === f ? 'var(--wc-gold)' : 'var(--text-muted)',
-                  border: `1px solid ${filter === f ? 'var(--wc-gold)' : 'var(--border-color)'}`,
-                }}>
-                {f === 'all' ? 'الكل' : f === 'upcoming' ? 'قادمة' : 'منتهية'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {filtered.map(m => (
-            <div key={m.id} className="flex items-center justify-between p-3 rounded-lg"
-              style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
-              <div className="flex items-center gap-3">
-                <span className="font-bebas text-sm" style={{ color: 'var(--text-muted)' }}>#{m.matchNumber}</span>
-                <span className="text-sm font-medium">{m.homeTeam} vs {m.awayTeam}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {m.status === 'finished' ? (
-                  <span className="font-bebas text-lg" style={{ color: 'var(--wc-gold)' }}>{m.homeScore} - {m.awayScore}</span>
-                ) : (
-                  <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(79,195,247,0.15)', color: 'var(--wc-sky)' }}>
-                    {m.groupLetter ? `المجموعة ${m.groupLetter}` : 'إقصائي'}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Quick filter */}
+      <div className="flex gap-2">
+        {['all', 'upcoming', 'finished'].map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className="px-3 py-1 rounded-full text-xs font-medium"
+            style={{ background: filter === f ? 'rgba(255,215,0,0.15)' : 'var(--bg-card)', color: filter === f ? 'var(--wc-gold)' : 'var(--text-muted)', border: `1px solid ${filter === f ? 'var(--wc-gold)' : 'var(--border-color)'}` }}>
+            {f === 'all' ? 'الكل' : f === 'upcoming' ? 'قادمة' : 'منتهية'}
+          </button>
+        ))}
       </div>
     </div>
   );

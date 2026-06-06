@@ -30,11 +30,21 @@ export async function POST(request: Request) {
       salt,
       avatarEmoji,
       totalPoints: 0,
+      isAdmin: false,
+      banned: false,
     }).returning();
 
     const user = result[0];
     return NextResponse.json({
-      user: { id: user.id, name: user.name, email: user.email, avatarEmoji: user.avatarEmoji, totalPoints: user.totalPoints },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatarEmoji: user.avatarEmoji,
+        totalPoints: user.totalPoints,
+        isAdmin: false,
+        banned: false,
+      },
     });
   } catch (error) {
     console.error("Register error:", error);
