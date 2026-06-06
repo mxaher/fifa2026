@@ -62,8 +62,24 @@ export const predictions = sqliteTable("predictions", {
   index("predictions_user_idx").on(table.userId),
 ]);
 
+// Sync audit log — keeps a record of every cron and manual sync run
+export const syncLog = sqliteTable("sync_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  triggeredBy: text("triggered_by").notNull(),  // 'cron' or 'admin'
+  sourceApi: text("source_api").notNull(),      // 'primary' | 'backup' | 'none'
+  fetchedMatches: integer("fetched_matches").default(0),
+  completedFound: integer("completed_found").default(0),
+  newlyFinalized: integer("newly_finalized").default(0),
+  alreadyDone: integer("already_done").default(0),
+  errorCount: integer("error_count").default(0),
+  errorsJson: text("errors_json"),              // JSON array of error strings
+  durationMs: integer("duration_ms"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Team = typeof teams.$inferSelect;
 export type Match = typeof matches.$inferSelect;
 export type Prediction = typeof predictions.$inferSelect;
+export type SyncLogEntry = typeof syncLog.$inferSelect;

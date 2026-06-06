@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X, ScrollText } from 'lucide-react';
 
 /* ─── Types ─── */
 interface User {
@@ -273,6 +273,7 @@ function Header({ user, activeTab, onTabChange, onLogout }: { user: User; active
     { id: 'matches', label: '⚽ المباريات', icon: Swords },
     { id: 'predictions', label: '🎯 توقعاتي', icon: Target },
     { id: 'leaderboard', label: '🏆 المتصدرين', icon: Trophy },
+    { id: 'rules', label: '📜 القواعد', icon: ScrollText },
   ];
 
   return (
@@ -647,6 +648,194 @@ function LeaderboardView({ user }: { user: User }) {
   );
 }
 
+/* ─── Sync Panel (in Rules page) ─── */
+function SyncPanel() {
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const data = await res.json();
+      if (data.success) {
+        setSyncResult({
+          success: true,
+          message: data.message || 'تمت المزامنة بنجاح',
+          details: `المصدر: ${data.summary?.source === 'primary' ? 'worldcup26.ir' : data.summary?.source === 'backup' ? 'worldcupjson.net' : 'لا يوجد'} | المباريات: ${data.summary?.fetchedMatches} | الجديدة: ${data.summary?.newlyFinalized} | أخطاء: ${data.summary?.errorCount}`,
+        });
+      } else {
+        setSyncResult({ success: false, message: 'فشلت المزامنة: ' + (data.error || 'خطأ غير معروف') });
+      }
+    } catch (err) {
+      setSyncResult({ success: false, message: 'خطأ في الاتصال' });
+    }
+    setSyncing(false);
+  };
+
+  return (
+    <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--wc-gold)' }}>
+            <span>🔄</span> مزامنة النتائج
+          </h3>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            يتم التحديث تلقائياً كل ٥ دقائق — اضغط للتحديث الفوري
+          </p>
+        </div>
+        <Button onClick={handleSync} disabled={syncing}
+          className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:opacity-90 active:scale-95"
+          style={{ background: 'linear-gradient(135deg, var(--wc-blue), var(--wc-sky))' }}>
+          {syncing ? '⏳ جاري المزامنة...' : '🔄 مزامنة الآن'}
+        </Button>
+      </div>
+
+      {syncResult && (
+        <div className="mt-4 p-3 rounded-xl text-sm font-medium border"
+          style={{
+            background: syncResult.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+            borderColor: syncResult.success ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)',
+            color: syncResult.success ? '#22c55e' : '#ef4444',
+          }}>
+          <p>{syncResult.message}</p>
+          {syncResult.details && <p className="text-xs mt-1 opacity-80">{syncResult.details}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Rules View ─── */
+function RulesView() {
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Hero banner */}
+      <div className="rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg, rgba(139,0,0,0.3), rgba(10,22,40,0.8), rgba(79,195,247,0.2))', border: '1px solid var(--border-color)' }}>
+        <div className="text-4xl mb-2">📜</div>
+        <h2 className="text-2xl font-black" style={{ color: 'var(--wc-gold)' }}>قواعد اللعبة</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>كيف تُحسب النقاط في ملك التوقعات - فيفا٢٦</p>
+      </div>
+
+      {/* Scoring System */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--wc-gold)' }}>
+          <span>🎯</span> نظام النقاط
+        </h3>
+        <div className="space-y-3">
+          {/* Exact score */}
+          <div className="flex items-center gap-4 p-4 rounded-lg" style={{ background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.3)' }}>
+            <div className="flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center font-bebas text-2xl" style={{ background: 'var(--pts-exact)', color: '#fff' }}>+3</div>
+            <div>
+              <p className="font-bold" style={{ color: 'var(--pts-exact)' }}>توقع دقيق</p>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>تطابق تام في النتيجة — مثال: توقعت ٢-١ وانتهت ٢-١</p>
+            </div>
+          </div>
+          {/* Correct outcome */}
+          <div className="flex items-center gap-4 p-4 rounded-lg" style={{ background: 'rgba(255,193,7,0.1)', border: '1px solid rgba(255,193,7,0.3)' }}>
+            <div className="flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center font-bebas text-2xl" style={{ background: 'var(--pts-correct)', color: '#000' }}>+2</div>
+            <div>
+              <p className="font-bold" style={{ color: 'var(--pts-correct)' }}>نتيجة صحيحة</p>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>النتيجة لم تتطابق لكن الفائز/التعادل صح — مثال: توقعت ٣-١ وانتهت ٢-٠</p>
+            </div>
+          </div>
+          {/* Wrong */}
+          <div className="flex items-center gap-4 p-4 rounded-lg" style={{ background: 'rgba(244,67,54,0.1)', border: '1px solid rgba(244,67,54,0.3)' }}>
+            <div className="flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center font-bebas text-2xl" style={{ background: 'var(--pts-wrong)', color: '#fff' }}>0</div>
+            <div>
+              <p className="font-bold" style={{ color: 'var(--pts-wrong)' }}>توقع خاطئ</p>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>لا نقاط — توقعت فوز وانتهت خسارة أو تعادل</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Examples */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--wc-gold)' }}>
+          <span>💡</span> أمثلة توضيحية
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ background: 'rgba(255,215,0,0.1)' }}>
+                <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>توقعك</th>
+                <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>النتيجة</th>
+                <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>النقاط</th>
+                <th className="px-3 py-2 text-right font-bold" style={{ color: 'var(--wc-gold)' }}>السبب</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { pred: '2-1', actual: '2-1', pts: '+3 دقيق', reason: 'تطابق تام', color: 'var(--pts-exact)' },
+                { pred: '3-0', actual: '1-0', pts: '+2 صحيح', reason: 'فوز صحيح', color: 'var(--pts-correct)' },
+                { pred: '1-1', actual: '2-2', pts: '+2 صحيح', reason: 'تعادل صحيح', color: 'var(--pts-correct)' },
+                { pred: '2-0', actual: '0-1', pts: '0 خاطئ', reason: 'فوز بدل خسارة', color: 'var(--pts-wrong)' },
+                { pred: '1-0', actual: '0-1', pts: '0 خاطئ', reason: 'فوز بدل خسارة', color: 'var(--pts-wrong)' },
+                { pred: '0-0', actual: '1-0', pts: '0 خاطئ', reason: 'تعادل بدل فوز', color: 'var(--pts-wrong)' },
+              ].map((ex, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td className="px-3 py-2 font-bebas text-lg" style={{ color: 'var(--wc-sky)' }}>{ex.pred}</td>
+                  <td className="px-3 py-2 font-bebas text-lg" style={{ color: 'var(--wc-gold)' }}>{ex.actual}</td>
+                  <td className="px-3 py-2 font-bold" style={{ color: ex.color }}>{ex.pts}</td>
+                  <td className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>{ex.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* General Rules */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--wc-gold)' }}>
+          <span>📋</span> القواعد العامة
+        </h3>
+        <ul className="space-y-3">
+          {[
+            { icon: '⏰', text: 'يمكنك التوقع على أي مباراة قبل بدايتها فقط — بمجرد بدء المباراة يُغلق التوقع' },
+            { icon: '✏️', text: 'يمكنك تعديل توقعك في أي وقت قبل بداية المباراة' },
+            { icon: '🏆', text: 'يتصدر لوحة المتصدرين من يجمع أكبر عدد من النقاط' },
+            { icon: '🔄', text: 'يتم تحديث النتائج تلقائياً كل ٥ دقائق أثناء البطولة' },
+            { icon: '👥', text: 'المسابقة مخصصة لموظفي مجموعة المرشد القابضة فقط' },
+            { icon: '⚽', text: 'كأس العالم فيفا ٢٠٢٦ — ٤٨ منتخب في ١٢ مجموعة' },
+            { icon: '📊', text: 'الترتيب يحدد بناءً على: النقاط → عدد التوقعات الدقيقة → عدد التوقعات الصحيحة' },
+          ].map((rule, i) => (
+            <li key={i} className="flex items-start gap-3 p-3 rounded-lg" style={{ background: 'rgba(79,195,247,0.05)', border: '1px solid rgba(79,195,247,0.1)' }}>
+              <span className="text-lg flex-shrink-0">{rule.icon}</span>
+              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{rule.text}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Sync Results Panel */}
+      <SyncPanel />
+
+      {/* Tournament Format */}
+      <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--wc-gold)' }}>
+          <span>🌍</span> نظام البطولة
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {[
+            { num: '48', label: 'منتخب مشارك' },
+            { num: '12', label: 'مجموعة (A-L)' },
+            { num: '72', label: 'مباراة دور المجموعات' },
+            { num: '32', label: 'مباراة الأدوار الإقصائية' },
+          ].map((item, i) => (
+            <div key={i} className="text-center p-4 rounded-lg" style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)' }}>
+              <div className="font-bebas text-4xl" style={{ color: 'var(--wc-gold)' }}>{item.num}</div>
+              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main App ─── */
 export default function Home() {
   // Initialize user from localStorage on mount
@@ -694,6 +883,7 @@ export default function Home() {
         {activeTab === 'matches' && <MatchesView user={user} />}
         {activeTab === 'predictions' && <PredictionsView user={user} />}
         {activeTab === 'leaderboard' && <LeaderboardView user={user} />}
+        {activeTab === 'rules' && <RulesView />}
       </main>
       <footer className="mt-auto py-4 text-center text-xs" style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)' }}>
         ملك التوقعات - فيفا٢٦ © ٢٠٢٦ | مجموعة المرشد القابضة

@@ -18,3 +18,13 @@ database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 # ──────────────────────────────────────────────────────────
 [vars]
 NODE_ENV = "production"
+
+# ── Cron Triggers ─────────────────────────────────────────────
+# Runs every 5 minutes during tournament hours (UTC 12:00-23:59)
+# and every 30 minutes outside match hours to save on invocations.
+[triggers]
+crons = [
+  "*/5 12-23 * 6-7 *",
+  "*/30 0-11 * 6-7 *",
+  "0 * * 1-5,8-12 *"
+]
