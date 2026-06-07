@@ -135,9 +135,8 @@ function TeamSlot({ team, score, winner, predicted, onClick, compact }: {
       {team ? (
         <>
           <FlagImg id={team.id} name={team.name} />
-          <span className="truncate text-xs flex-1" style={{
+          <span className="truncate text-xs flex-1 min-w-0" style={{
             color: txtColor,
-            maxWidth: compact ? 50 : 100,
           }}>
             {compact ? team.id : team.name}
           </span>
@@ -164,10 +163,10 @@ function MatchNode({ match, compact, onPredict, predictedWinner }: {
   const isFinal = match.round === 'Final';
 
   return (
-    <div className="rounded-lg" style={{
+    <div className="rounded-lg overflow-hidden" style={{
       background: COLORS.surface,
       border: isFinal ? '2px solid ' + COLORS.gold : `1px solid ${COLORS.border}`,
-      width: compact ? 140 : 170,
+      width: compact ? 160 : 210,
       flexShrink: 0,
     }}>
       {/* Round label */}
@@ -217,10 +216,10 @@ function MatchNode({ match, compact, onPredict, predictedWinner }: {
 
 function ChampionNode({ team, compact }: { team: { id: string; name: string; flag: string } | null; compact: boolean }) {
   return (
-    <div className="rounded-lg flex flex-col items-center justify-center gap-2" style={{
+    <div className="rounded-lg flex flex-col items-center justify-center gap-2 overflow-hidden" style={{
       background: `color-mix(in oklch, ${COLORS.gold} 10%, ${COLORS.surface})`,
       border: `2px solid ${COLORS.gold}`,
-      width: compact ? 140 : 170,
+      width: compact ? 160 : 210,
       minHeight: 100,
       flexShrink: 0,
     }}>
@@ -672,10 +671,7 @@ export default function BracketView({ userId }: { userId: string }) {
           <RoundNav rounds={bracketData.rounds} activeRound={activeRound} onSelect={scrollToRound} />
 
           {/* Scrollable bracket canvas */}
-          <div className="relative overflow-x-auto" style={{
-            maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
-          }}>
+          <div className="relative overflow-x-auto">
             <div ref={containerRef} className="flex gap-8 py-4" style={{ minHeight: compact ? 400 : 600 }}>
               {/* Groups column */}
               <div data-round="groups" className="flex flex-col gap-3" style={{ flexShrink: 0 }}>
