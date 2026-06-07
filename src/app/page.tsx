@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X, ScrollText, Shield, Users, BarChart3, UserPlus, Ban, Trash2, Edit, Save, Plus } from 'lucide-react';
+import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X, ScrollText, Shield, Users, BarChart3, UserPlus, Ban, Trash2, Edit, Save, Plus, GitFork } from 'lucide-react';
+import BracketView from './bracket-view';
 
 const FIFA_TO_ISO: Record<string, string> = {
   MEX:'mx', ZAF:'za', KOR:'kr', CZE:'cz', CAN:'ca', BIH:'ba', QAT:'qa',
@@ -597,6 +598,7 @@ function Header({ user, activeTab, onTabChange, onLogout }: { user: User; active
     { id: 'predictions', label: '🎯 توقعاتي', icon: Target },
     { id: 'leaderboard', label: '🏆 المتصدرين', icon: Trophy },
     { id: 'rules', label: '📜 القواعد', icon: ScrollText },
+    { id: 'bracket', label: '🏆 السُلّم', icon: GitFork },
     ...(isAdmin ? [{ id: 'admin', label: '🛡️ الإدارة', icon: Shield }] : []),
   ];
 
@@ -2352,6 +2354,7 @@ export default function Home() {
         {activeTab === 'predictions' && <PredictionsView user={user} />}
         {activeTab === 'leaderboard' && <LeaderboardView user={user} />}
         {activeTab === 'rules' && <RulesView />}
+        {activeTab === 'bracket' && <BracketView userId={user.id} />}
         {activeTab === 'admin' && user.email === 'admin@almarshad.com' && (
           adminToken ? (
             <AdminPanel adminToken={adminToken} />
