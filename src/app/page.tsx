@@ -750,86 +750,10 @@ function MatchesView({ user }: { user: User }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['A']));
-
-  const resultsKey = useMemo(() =>
-    matches.map(m => `${m.id}:${m.homeScore}:${m.awayScore}:${m.status}`).join('|'),
-  [matches]);
-
-  const virtualMatches = useMemo(() => {
-    function computeGroupStanding(teamId: string, groupLetter: string) {
-      const groupMatches = matches.filter(m => m.groupLetter === groupLetter && m.status === 'finished' && m.homeScore != null && m.awayScore != null);
-      let pts = 0, gf = 0, ga = 0, played = 0;
-      for (const m of groupMatches) {
-        const hs = m.homeScore!;
-        const as = m.awayScore!;
-        if (m.homeTeam?.id === teamId) { gf += hs; ga += as; played++; pts += hs > as ? 3 : hs === as ? 1 : 0; }
-        if (m.awayTeam?.id === teamId) { gf += as; ga += hs; played++; pts += as > hs ? 3 : as === hs ? 1 : 0; }
-      }
-      return { teamId, pts, gd: gf - ga, gf, played };
-    }
-
-    function fillKnockoutTeams(): MatchWithTeams[] {
-      const groupLetters = ['A','B','C','D','E','F','G','H','I','J','K','L'];
-      const allStandings: { teamId: string; pts: number; gd: number; gf: number; played: number; group: string }[] = [];
-
-      for (const gl of groupLetters) {
-        const groupMatches = matches.filter(m => m.groupLetter === gl && m.status === 'finished' && m.homeScore != null && m.awayScore != null);
-        if (groupMatches.length === 0) continue;
-        const groupTeams = [...new Set(matches.filter(m => m.groupLetter === gl).flatMap(m => [m.homeTeam?.id, m.awayTeam?.id]).filter(Boolean))] as string[];
-        const standings = groupTeams.map(id => ({ ...computeGroupStanding(id, gl), group: gl }))
-          .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
-        standings.forEach((s, i) => {
-          if (i < 2) allStandings.push(s);
-        });
-      }
-
-      const advanced = new Map<string, string[]>();
-      for (const gl of groupLetters) {
-        const qualifiers = allStandings.filter(s => s.group === gl).map(s => s.teamId);
-        advanced.set(gl, qualifiers);
-      }
-
-      const teamInfo = (id: string) => {
-        const m = matches.find(m => m.homeTeam?.id === id || m.awayTeam?.id === id);
-        const t = m?.homeTeam?.id === id ? m.homeTeam : m?.awayTeam;
-        return t ? { id: t.id, name: t.nameAr || t.name, nameAr: t.nameAr, flag: t.flag || '', groupLetter: t.groupLetter, fifaRank: t.fifaRank } : null;
-      };
-
-      const R32_PAIRINGS: [number, string, string][] = [
-        [0, 'A', 'B'], [0, 'C', 'D'], [0, 'B', 'C'], [0, 'D', 'E'],
-        [0, 'E', 'F'], [0, 'F', 'G'], [0, 'G', 'H'], [0, 'I', 'J'],
-        [1, 'A', 'C'], [1, 'B', 'D'], [1, 'D', 'F'], [1, 'E', 'G'],
-        [1, 'F', 'H'], [1, 'G', 'I'], [1, 'H', 'J'], [1, 'K', 'L'],
-      ];
-
-      return KNOCKOUT_MATCHES.map((km, i) => {
-        if (i >= 16) return km;
-        const [pos, g1, g2] = R32_PAIRINGS[i] || [0, 'A', 'B'];
-        const q1 = (advanced.get(g1) || [])[pos];
-        const q2 = (advanced.get(g2) || [])[pos === 0 ? 1 : 0];
-        return {
-          ...km,
-          homeTeam: q1 ? teamInfo(q1) : null,
-          awayTeam: q2 ? teamInfo(q2) : null,
-        } as MatchWithTeams;
-      });
-    }
-
-    return fillKnockoutTeams();
-  }, [resultsKey]);
-
-  const allDisplayMatches = useMemo(() => {
-    const realGroupMatches = matches.filter(m => m.groupLetter !== null);
-    const mergedVirtual = virtualMatches.map(vm => {
-      const dbMatch = matches.find(m => m.matchNumber === vm.matchNumber);
-      if (dbMatch && dbMatch.status === 'finished' && dbMatch.homeScore != null) {
-        return { ...vm, homeScore: dbMatch.homeScore, awayScore: dbMatch.awayScore, status: dbMatch.status };
-      }
-      return vm;
-    });
-    return [...realGroupMatches, ...mergedVirtual];
-  }, [matches, virtualMatches]);
+  const [selectedMatch, setSelectedMatch] = useState<MatchWithTeams | null>(null);
+  const [predHome, setPredHome] = useState('');
+  const [predAway, setPredAway] = useState('');
+  const [predSubmitting, setPredSubmitting] = useState(false);
 
   const updatePrediction = useCallback((matchId: string, homeScore: number, awayScore: number) => {
     setMatches(prev => prev.map(m =>
@@ -838,12 +762,6 @@ function MatchesView({ user }: { user: User }) {
         : m
     ));
   }, []);
-
-  const fetchMatches = useCallback(async () => {
-    const data = await apiFetch(`/api/matches?userId=${user.id}`);
-    if (data.matches) setMatches(data.matches);
-    setLoading(false);
-  }, [user.id]);
 
   useEffect(() => {
     let active = true;
@@ -856,27 +774,57 @@ function MatchesView({ user }: { user: User }) {
     return () => { active = false; clearInterval(iv); };
   }, [user.id]);
 
-  const filteredMatches = allDisplayMatches.filter(m => {
+  const filteredMatches = matches.filter(m => {
     if (filter === 'upcoming') return m.status === 'upcoming';
     if (filter === 'live') return m.status === 'live';
     if (filter === 'finished') return m.status === 'finished';
     return true;
   });
 
-  const groups = filteredMatches.reduce<Record<string, MatchWithTeams[]>>((acc, m) => {
-    const g = m.groupLetter || 'knockout';
-    if (!acc[g]) acc[g] = [];
-    acc[g].push(m);
-    return acc;
-  }, {});
-
-  const toggleGroup = (g: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(g)) next.delete(g); else next.add(g);
-      return next;
-    });
+  const handleMatchClick = (match: MatchWithTeams) => {
+    if (match.status === 'upcoming') {
+      setSelectedMatch(match);
+      setPredHome(match.prediction?.homeScore?.toString() || '');
+      setPredAway(match.prediction?.awayScore?.toString() || '');
+    }
   };
+
+  const handlePredSubmit = async () => {
+    if (!selectedMatch || predHome === '' || predAway === '') return;
+    setPredSubmitting(true);
+    try {
+      const data = await apiFetch('/api/predictions', {
+        method: 'POST',
+        body: JSON.stringify({ matchId: selectedMatch.id, homeScore: parseInt(predHome), awayScore: parseInt(predAway) }),
+      });
+      if (data.error) {
+        alert(data.error);
+      } else {
+        updatePrediction(selectedMatch.id, parseInt(predHome), parseInt(predAway));
+        setSelectedMatch(null);
+      }
+    } catch { alert('حدث خطأ'); }
+    setPredSubmitting(false);
+  };
+
+  // Date-based grouping
+  const matchesByDate = new Map<string, MatchWithTeams[]>();
+  for (const match of filteredMatches) {
+    const date = new Date(match.kickoff).toISOString().split('T')[0];
+    if (!matchesByDate.has(date)) matchesByDate.set(date, []);
+    matchesByDate.get(date)!.push(match);
+  }
+  const sortedDates = [...matchesByDate.keys()].sort();
+  const today = new Date().toISOString().split('T')[0];
+
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (sortedDates.length > 0) {
+      const idx = sortedDates.indexOf(today);
+      setExpandedDates(new Set(idx >= 0 ? sortedDates.slice(Math.max(0, idx - 1), idx + 4) : sortedDates.slice(0, 3)));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortedDates.length]);
 
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
 
@@ -897,33 +845,100 @@ function MatchesView({ user }: { user: User }) {
         ))}
       </div>
 
-      {/* Groups */}
-      {Object.entries(groups).sort(([a], [b]) => {
-        if (a === 'knockout') return 1;
-        if (b === 'knockout') return -1;
-        return a.localeCompare(b);
-      }).map(([group, groupMatches]) => (
-        <div key={group} className="mb-4">
-          <button onClick={() => toggleGroup(group)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-lg mb-2 transition-all"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-            <span className="font-bold text-sm" style={{ color: 'var(--wc-gold)' }}>
-              {group === 'knockout' ? '🏆 الأدوار الإقصائية' : `⚽ المجموعة ${group}`} ({groupMatches.length} مباراة)
-            </span>
-            {expandedGroups.has(group) ? <ChevronUp className="h-4 w-4" style={{ color: 'var(--text-muted)' }} /> : <ChevronDown className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />}
-          </button>
-          {expandedGroups.has(group) && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {groupMatches.map(match => (
-                <MatchCard key={match.id} match={match} userId={user.id} onSaved={updatePrediction} />
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+      {/* Date-based schedule */}
+      <div className="space-y-3">
+        {sortedDates.map(date => {
+          const dateObj = new Date(date + 'T12:00:00');
+          const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Asia/Riyadh' });
+          const dayNum = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh' });
+          const isExpanded = expandedDates.has(date);
+          const dayMatches = matchesByDate.get(date) || [];
+          const finishedCount = dayMatches.filter(m => m.status === 'finished').length;
+          const upcomingCount = dayMatches.filter(m => m.status === 'upcoming').length;
+          const isToday = date === today;
+          const isPast = new Date(date).getTime() < Date.now() - 86400000;
 
-      {Object.keys(groups).length === 0 && (
-        <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>لا توجد مباريات</div>
+          return (
+            <div key={date} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--wc-gold)' : 'var(--border-color)'}` }}>
+              <button onClick={() => setExpandedDates(prev => { const n = new Set(prev); n.has(date) ? n.delete(date) : n.add(date); return n; })}
+                className="w-full flex items-center justify-between p-3 transition-colors hover:opacity-90"
+                style={{ background: isToday ? 'rgba(255,215,0,0.08)' : 'transparent' }}>
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{isToday ? '🔥' : '📅'}</div>
+                  <div className="text-right">
+                    <div className="font-bold text-sm" style={{ color: isToday ? 'var(--wc-gold)' : 'var(--text-primary)' }}>
+                      {dayName} {isToday && '(اليوم)'}
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{dayNum}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-2 text-xs">
+                    {finishedCount > 0 && <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(46,125,50,0.2)', color: '#4CAF50' }}>{finishedCount} منتهية</span>}
+                    {upcomingCount > 0 && <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(79,195,247,0.2)', color: '#4FC3F7' }}>{upcomingCount} قادمة</span>}
+                  </div>
+                  <span className="text-lg transition-transform" style={{ color: 'var(--text-muted)', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
+                </div>
+              </button>
+              {isExpanded && (
+                <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  {dayMatches.map(match => (
+                    <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {sortedDates.length === 0 && (
+        <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>
+          <div className="text-4xl mb-3">📭</div>
+          <p>لا توجد مباريات في هذا التصنيف</p>
+        </div>
+      )}
+
+      {/* Prediction Modal */}
+      {selectedMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setSelectedMatch(null)}>
+          <div className="rounded-2xl p-6 max-w-md w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-bold" style={{ color: 'var(--wc-gold)' }}>⚽ تنبؤ</h3>
+            </div>
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="text-center">
+                <FlagImg id={selectedMatch.homeTeam?.id} name={selectedMatch.homeTeam?.name} className="text-3xl" />
+                <div className="text-xs mt-1 font-medium" style={{ color: 'var(--text-primary)' }}>{selectedMatch.homeTeam?.nameAr || selectedMatch.homeTeam?.name}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="number" min="0" max="20" value={predHome} onChange={e => setPredHome(e.target.value)}
+                  className="w-14 h-12 text-center rounded-lg font-bebas text-xl"
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--wc-gold)' }} />
+                <span className="font-bebas text-lg" style={{ color: 'var(--text-muted)' }}>-</span>
+                <input type="number" min="0" max="20" value={predAway} onChange={e => setPredAway(e.target.value)}
+                  className="w-14 h-12 text-center rounded-lg font-bebas text-xl"
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--wc-gold)' }} />
+              </div>
+              <div className="text-center">
+                <FlagImg id={selectedMatch.awayTeam?.id} name={selectedMatch.awayTeam?.name} className="text-3xl" />
+                <div className="text-xs mt-1 font-medium" style={{ color: 'var(--text-primary)' }}>{selectedMatch.awayTeam?.nameAr || selectedMatch.awayTeam?.name}</div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={() => setSelectedMatch(null)} className="flex-1 h-10"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                إلغاء
+              </Button>
+              <Button onClick={handlePredSubmit} disabled={predSubmitting || predHome === '' || predAway === ''}
+                className="flex-1 h-10 font-bold" style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+                {predSubmitting ? '...' : selectedMatch.prediction ? 'تعديل' : 'تأكيد'}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
