@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getClient, schema } from "@/lib/db/index";
 import { verifyPassword } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const BASE_URL = process.env.BASE_URL || "https://fifa26-predictions.moh-zaher.workers.dev";
 
@@ -14,6 +14,10 @@ export async function POST(request: Request) {
     }
 
     const db = getClient();
+    // Auto-migrate: ensure new columns exist (safe to run repeatedly)
+    try { await db.run(sql`ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0`); } catch {}
+    try { await db.run(sql`ALTER TABLE users ADD COLUMN verification_token TEXT`); } catch {}
+
     const users = await db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1);
 
     if (users.length === 0) {

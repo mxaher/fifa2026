@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getClient, schema } from "@/lib/db/index";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
@@ -15,6 +15,10 @@ export async function GET(request: Request) {
     }
 
     const db = getClient();
+    // Auto-migrate: ensure new columns exist (safe to run repeatedly)
+    try { await db.run(sql`ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0`); } catch {}
+    try { await db.run(sql`ALTER TABLE users ADD COLUMN verification_token TEXT`); } catch {}
+
     const users = await db.select().from(schema.users).where(eq(schema.users.verificationToken, token)).limit(1);
 
     if (users.length === 0) {
