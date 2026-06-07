@@ -464,11 +464,9 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
 function TournamentSchedule({ onMatchClick }: { onMatchClick?: (match: MatchWithTeams) => void }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
-  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  });
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch('/api/matches')
@@ -476,66 +474,42 @@ function TournamentSchedule({ onMatchClick }: { onMatchClick?: (match: MatchWith
       .then(data => {
         if (data.matches) {
           setMatches(data.matches);
-          // Jump to the month of the first match
-          const first = data.matches[0]?.kickoff;
-          if (first) {
-            const fd = new Date(first);
-            setCurrentMonth(new Date(fd.getFullYear(), fd.getMonth(), 1));
+          // Auto-select today or first match date
+          const today = new Date().toISOString().split('T')[0];
+          const dates = [...new Set(data.matches.map((m: MatchWithTeams) => new Date(m.kickoff).toISOString().split('T')[0]))] as string[];
+          if (dates.includes(today)) {
+            setSelectedDate(today);
+          } else if (dates.length > 0) {
+            // Find the closest upcoming date
+            const now = Date.now();
+            const upcoming = dates.find(d => new Date(d).getTime() >= now) || dates[0];
+            setSelectedDate(upcoming);
           }
+          // Expand first 3 dates
+          setExpandedDates(new Set(dates.slice(0, 3)));
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  // Apply group filter
-  const filteredMatches = selectedGroup === 'all'
-    ? matches
-    : matches.filter(m => m.groupLetter === selectedGroup);
+  // Group matches by date
+  const matchesByDate = new Map<string, MatchWithTeams[]>();
+  for (const match of matches) {
+    const date = new Date(match.kickoff).toISOString().split('T')[0];
+    if (selectedGroup !== 'all' && match.groupLetter !== selectedGroup) continue;
+    if (!matchesByDate.has(date)) matchesByDate.set(date, []);
+    matchesByDate.get(date)!.push(match);
+  }
 
-  // Compute calendar grid: 6 rows × 7 cols of day cells (Saudi week: Sat=0)
-  const calendarGrid = useMemo(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const firstGridDay = (firstDay.getDay() + 1) % 7;
+  const sortedDates = [...matchesByDate.keys()].sort();
 
-    type DayCell = { date: Date; isCurrentMonth: boolean; isToday: boolean; matches: MatchWithTeams[] };
-    const weeks: DayCell[][] = [];
-    let currentWeek: DayCell[] = [];
-
-    for (let i = 0; i < firstGridDay; i++) {
-      currentWeek.push({ date: new Date(year, month, i - firstGridDay + 1), isCurrentMonth: false, isToday: false, matches: [] });
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMs = today.getTime();
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const dayMatches = filteredMatches.filter(m => {
-        const k = new Date(m.kickoff);
-        return k.getFullYear() === date.getFullYear() && k.getMonth() === date.getMonth() && k.getDate() === date.getDate();
-      });
-      currentWeek.push({ date, isCurrentMonth: true, isToday: date.getTime() === todayMs, matches: dayMatches });
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-    }
-    if (currentWeek.length > 0) {
-      let nextDay = 1;
-      while (currentWeek.length < 7) {
-        currentWeek.push({ date: new Date(year, month + 1, nextDay), isCurrentMonth: false, isToday: false, matches: [] });
-        nextDay++;
-      }
-      weeks.push(currentWeek);
-    }
-    return weeks;
-  }, [currentMonth, filteredMatches]);
+  const toggleDate = (date: string) => {
+    const next = new Set(expandedDates);
+    if (next.has(date)) next.delete(date);
+    else next.add(date);
+    setExpandedDates(next);
+  };
 
   const groups = ['all', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
@@ -571,94 +545,57 @@ function TournamentSchedule({ onMatchClick }: { onMatchClick?: (match: MatchWith
         ))}
       </div>
 
-      {/* Month navigation */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-            className="px-2.5 h-8 rounded-lg text-sm font-bold transition-all hover:opacity-80"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-            aria-label="الشهر السابق">‹</button>
-          <h3 className="text-base font-bold px-2 min-w-[140px] text-center" style={{ color: 'var(--text-primary)' }}>
-            {currentMonth.toLocaleDateString('ar-SA', { calendar: 'gregory', month: 'long', year: 'numeric', timeZone: 'Asia/Riyadh' })}
-          </h3>
-          <button
-            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-            className="px-2.5 h-8 rounded-lg text-sm font-bold transition-all hover:opacity-80"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-            aria-label="الشهر التالي">›</button>
-        </div>
-        <button
-          onClick={() => { const d = new Date(); setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1)); }}
-          className="px-2.5 h-8 rounded-lg text-xs font-medium transition-all hover:opacity-80"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--wc-gold)' }}>
-          اليوم
-        </button>
-      </div>
+      {/* Dates */}
+      <div className="space-y-3">
+        {sortedDates.map(date => {
+          const dateObj = new Date(date + 'T12:00:00');
+          const dayName = dateObj.toLocaleDateString('ar-SA', { calendar: 'gregory', weekday: 'long', timeZone: 'Asia/Riyadh' });
+          const dayNum = dateObj.toLocaleDateString('ar-SA', { calendar: 'gregory', month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh' });
+          const isExpanded = expandedDates.has(date);
+          const dayMatches = matchesByDate.get(date) || [];
+          const finishedCount = dayMatches.filter(m => m.status === 'finished').length;
+          const upcomingCount = dayMatches.filter(m => m.status === 'upcoming').length;
+          const isToday = date === new Date().toISOString().split('T')[0];
+          const isPast = new Date(date).getTime() < Date.now() - 86400000;
 
-      {/* Calendar grid */}
-      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-        <div className="grid grid-cols-7" style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
-          {['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'].map(day => (
-            <div key={day} className="py-1.5 text-center text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>
-              {day.slice(0, 3)}
-            </div>
-          ))}
-        </div>
-        {calendarGrid.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7" style={{ borderTop: wi > 0 ? '1px solid var(--border-color)' : 'none' }}>
-            {week.map((day, di) => {
-              const maxVisible = 2;
-              const visible = day.matches.slice(0, maxVisible);
-              const overflow = day.matches.length - maxVisible;
-              return (
-                <div
-                  key={di}
-                  className="min-h-[70px] p-1"
-                  style={{
-                    borderLeft: di < 6 ? '1px solid var(--border-color)' : 'none',
-                    opacity: day.isCurrentMonth ? 1 : 0.35,
-                    background: day.isToday ? 'rgba(255,215,0,0.06)' : 'transparent',
-                  }}>
-                  <div className="text-[10px] font-bold mb-0.5" style={{
-                    color: day.isToday ? 'var(--wc-gold)' : 'var(--text-primary)',
-                  }}>
-                    {day.date.getDate()}
-                  </div>
-                  <div className="space-y-0.5">
-                    {visible.map(match => {
-                      const isGroup = !!match.groupLetter;
-                      const isFinished = match.status === 'finished';
-                      const isLive = match.status === 'live';
-                      let bg = 'rgba(79,195,247,0.15)';
-                      let color = 'var(--wc-sky)';
-                      if (isFinished) { bg = 'rgba(76,175,80,0.18)'; color = '#4CAF50'; }
-                      else if (isLive) { bg = 'rgba(244,67,54,0.2)'; color = '#F44336'; }
-                      else if (!isGroup) { bg = 'rgba(255,215,0,0.15)'; color = 'var(--wc-gold)'; }
-                      return (
-                        <button
-                          key={match.id}
-                          onClick={() => onMatchClick?.(match)}
-                          title={isGroup ? `المجموعة ${match.groupLetter}` : (match.homeTeam?.id || '?') + ' vs ' + (match.awayTeam?.id || '?')}
-                          className="w-full text-right px-1 py-0.5 rounded text-[9px] font-medium transition-all hover:opacity-80 truncate block"
-                          style={{ background: bg, color }}>
-                          <span className="font-mono opacity-70 ml-0.5">#{match.matchNumber}</span>
-                          {(match.homeTeam?.id || '?')} × {(match.awayTeam?.id || '?')}
-                        </button>
-                      );
-                    })}
-                    {overflow > 0 && (
-                      <div className="text-[9px] text-center" style={{ color: 'var(--text-muted)' }}>+{overflow}</div>
-                    )}
+          return (
+            <div key={date} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--wc-gold)' : 'var(--border-color)'}` }}>
+              {/* Date Header */}
+              <button onClick={() => toggleDate(date)}
+                className="w-full flex items-center justify-between p-3 transition-colors hover:opacity-90"
+                style={{ background: isToday ? 'rgba(255,215,0,0.08)' : 'transparent' }}>
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{isToday ? '🔥' : isPast ? '✅' : '📅'}</div>
+                  <div className="text-right">
+                    <div className="font-bold text-sm" style={{ color: isToday ? 'var(--wc-gold)' : 'var(--text-primary)' }}>
+                      {dayName} {isToday && '(اليوم)'}
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{dayNum}</div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ))}
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-2 text-xs">
+                    {finishedCount > 0 && <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(46,125,50,0.2)', color: '#4CAF50' }}>{finishedCount} منتهية</span>}
+                    {upcomingCount > 0 && <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(79,195,247,0.2)', color: '#4FC3F7' }}>{upcomingCount} قادمة</span>}
+                  </div>
+                  <span className="text-lg transition-transform" style={{ color: 'var(--text-muted)', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
+                </div>
+              </button>
+
+              {/* Matches List */}
+              {isExpanded && (
+                <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  {dayMatches.map(match => (
+                    <MatchScheduleCard key={match.id} match={match} onClick={() => onMatchClick?.(match)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {filteredMatches.length === 0 && (
+      {sortedDates.length === 0 && (
         <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>
           <div className="text-4xl mb-3">📭</div>
           <p>لا توجد مباريات في هذا التصنيف</p>
@@ -1010,86 +947,24 @@ function MatchesView({ user }: { user: User }) {
     setPredSubmitting(false);
   };
 
-  // Calendar month state (defaults to the month of the first match, or current month)
-  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
-    const first = filteredMatches[0]?.kickoff;
-    if (first) {
-      const d = new Date(first);
-      return new Date(d.getFullYear(), d.getMonth(), 1);
-    }
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  });
+  // Date-based grouping
+  const matchesByDate = new Map<string, MatchWithTeams[]>();
+  for (const match of filteredMatches) {
+    const date = new Date(match.kickoff).toISOString().split('T')[0];
+    if (!matchesByDate.has(date)) matchesByDate.set(date, []);
+    matchesByDate.get(date)!.push(match);
+  }
+  const sortedDates = [...matchesByDate.keys()].sort();
+  const today = new Date().toISOString().split('T')[0];
 
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   useEffect(() => {
-    if (filteredMatches.length === 0) return;
-    const d = new Date();
-    const todayMonth = new Date(d.getFullYear(), d.getMonth(), 1);
-    const hasMatchInCurrentMonth = filteredMatches.some(m => {
-      const k = new Date(m.kickoff);
-      return k.getFullYear() === todayMonth.getFullYear() && k.getMonth() === todayMonth.getMonth();
-    });
-    setCurrentMonth(prev => {
-      const first = filteredMatches[0]?.kickoff;
-      if (first) {
-        const fd = new Date(first);
-        return new Date(fd.getFullYear(), fd.getMonth(), 1);
-      }
-      return hasMatchInCurrentMonth ? todayMonth : prev;
-    });
-  }, [filteredMatches.length]);
-
-  // Compute calendar grid: 6 rows × 7 cols of day cells
-  // Saudi week: Sat=0 ... Fri=6
-  const calendarGrid = useMemo(() => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const firstGridDay = (firstDay.getDay() + 1) % 7; // Sat=0
-
-    type DayCell = { date: Date; isCurrentMonth: boolean; isToday: boolean; matches: MatchWithTeams[] };
-    const weeks: DayCell[][] = [];
-    let currentWeek: DayCell[] = [];
-
-    // Days from previous month
-    for (let i = 0; i < firstGridDay; i++) {
-      const date = new Date(year, month, i - firstGridDay + 1);
-      currentWeek.push({ date, isCurrentMonth: false, isToday: false, matches: [] });
+    if (sortedDates.length > 0) {
+      const idx = sortedDates.indexOf(today);
+      setExpandedDates(new Set(idx >= 0 ? sortedDates.slice(Math.max(0, idx - 1), idx + 4) : sortedDates.slice(0, 3)));
     }
-
-    // Days in current month
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMs = today.getTime();
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const dayMatches = filteredMatches.filter(m => {
-        const k = new Date(m.kickoff);
-        return k.getFullYear() === date.getFullYear() && k.getMonth() === date.getMonth() && k.getDate() === date.getDate();
-      });
-      const isToday = date.getTime() === todayMs;
-      currentWeek.push({ date, isCurrentMonth: true, isToday, matches: dayMatches });
-      if (currentWeek.length === 7) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
-    }
-
-    // Days from next month to fill the last week
-    if (currentWeek.length > 0) {
-      let nextDay = 1;
-      while (currentWeek.length < 7) {
-        const date = new Date(year, month + 1, nextDay);
-        currentWeek.push({ date, isCurrentMonth: false, isToday: false, matches: [] });
-        nextDay++;
-      }
-      weeks.push(currentWeek);
-    }
-
-    return weeks;
-  }, [currentMonth, filteredMatches]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortedDates.length]);
 
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
 
@@ -1110,136 +985,92 @@ function MatchesView({ user }: { user: User }) {
         ))}
       </div>
 
-      {/* Month navigation */}
-      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-            className="px-3 h-9 rounded-lg text-sm font-bold transition-all hover:opacity-80"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-            aria-label="الشهر السابق">‹</button>
-          <h2 className="text-lg md:text-xl font-bold px-2 min-w-[160px] text-center" style={{ color: 'var(--text-primary)' }}>
-            {currentMonth.toLocaleDateString('ar-SA', { calendar: 'gregory', month: 'long', year: 'numeric', timeZone: 'Asia/Riyadh' })}
-          </h2>
-          <button
-            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-            className="px-3 h-9 rounded-lg text-sm font-bold transition-all hover:opacity-80"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-            aria-label="الشهر التالي">›</button>
-        </div>
-        <button
-          onClick={() => { const d = new Date(); setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1)); }}
-          className="px-3 h-9 rounded-lg text-sm font-medium transition-all hover:opacity-80"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--wc-gold)' }}>
-          اليوم
-        </button>
-      </div>
+      {/* Date-based schedule */}
+      {(() => {
+        const groupDates = sortedDates.filter(d => (matchesByDate.get(d) || []).some(m => m.groupLetter));
+        const koDates = sortedDates.filter(d => (matchesByDate.get(d) || []).some(m => !m.groupLetter));
 
-      {/* Calendar grid */}
-      <div className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-        {/* Day-of-week headers */}
-        <div className="grid grid-cols-7" style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
-          {['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'].map(day => (
-            <div key={day} className="py-2 text-center text-[11px] md:text-xs font-bold" style={{ color: 'var(--text-muted)' }}>
-              {day}
-            </div>
-          ))}
-        </div>
+        const renderDate = (date: string) => {
+          const dateObj = new Date(date + 'T12:00:00');
+          const dayName = dateObj.toLocaleDateString('ar-SA', { calendar: 'gregory', weekday: 'long', timeZone: 'Asia/Riyadh' });
+          const dayNum = dateObj.toLocaleDateString('ar-SA', { calendar: 'gregory', month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh' });
+          const isExpanded = expandedDates.has(date);
+          const dayMatches = matchesByDate.get(date) || [];
+          const finishedCount = dayMatches.filter(m => m.status === 'finished').length;
+          const upcomingCount = dayMatches.filter(m => m.status === 'upcoming').length;
+          const isToday = date === today;
+          const isPast = new Date(date).getTime() < Date.now() - 86400000;
 
-        {/* Day cells (6 weeks × 7 days) */}
-        {calendarGrid.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7" style={{ borderTop: wi > 0 ? '1px solid var(--border-color)' : 'none' }}>
-            {week.map((day, di) => {
-              const maxVisible = 3;
-              const visible = day.matches.slice(0, maxVisible);
-              const overflow = day.matches.length - maxVisible;
-              return (
-                <div
-                  key={di}
-                  className="min-h-[90px] md:min-h-[120px] p-1 md:p-1.5"
-                  style={{
-                    borderLeft: di < 6 ? '1px solid var(--border-color)' : 'none',
-                    opacity: day.isCurrentMonth ? 1 : 0.35,
-                    background: day.isToday ? 'rgba(255,215,0,0.06)' : 'transparent',
-                  }}>
-                  {/* Day number */}
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="text-[11px] md:text-xs font-bold" style={{
-                      color: day.isToday ? 'var(--wc-gold)' : 'var(--text-primary)',
-                    }}>
-                      {day.date.getDate()}
+          return (
+            <div key={date} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: `1px solid ${isToday ? 'var(--wc-gold)' : 'var(--border-color)'}` }}>
+              <button onClick={() => setExpandedDates(prev => { const n = new Set(prev); n.has(date) ? n.delete(date) : n.add(date); return n; })}
+                className="w-full flex items-center justify-between p-3 transition-colors hover:opacity-90"
+                style={{ background: isToday ? 'rgba(255,215,0,0.08)' : 'transparent' }}>
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{isToday ? '🔥' : '📅'}</div>
+                  <div className="text-right">
+                    <div className="font-bold text-sm" style={{ color: isToday ? 'var(--wc-gold)' : 'var(--text-primary)' }}>
+                      {dayName} {isToday && '(اليوم)'}
                     </div>
-                    {day.isToday && (
-                      <div className="text-[9px] md:text-[10px] px-1 rounded" style={{ background: 'var(--wc-gold)', color: '#000' }}>
-                        اليوم
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Match badges */}
-                  <div className="space-y-0.5">
-                    {visible.map(match => {
-                      const locked = isMatchLocked(match, allDisplayMatches);
-                      const isGroup = !!match.groupLetter;
-                      const isFinished = match.status === 'finished';
-                      const isLive = match.status === 'live';
-                      const hasPrediction = !!match.prediction;
-                      const homeAbbr = match.homeTeam?.id || '?';
-                      const awayAbbr = match.awayTeam?.id || '?';
-                      let bg = 'rgba(79,195,247,0.12)';
-                      let color = 'var(--wc-sky)';
-                      let border = 'rgba(79,195,247,0.3)';
-                      if (locked) {
-                        bg = 'rgba(100,116,139,0.15)';
-                        color = 'var(--text-muted)';
-                        border = 'var(--border-color)';
-                      } else if (isFinished) {
-                        bg = 'rgba(76,175,80,0.15)';
-                        color = '#4CAF50';
-                        border = 'rgba(76,175,80,0.3)';
-                      } else if (isLive) {
-                        bg = 'rgba(244,67,54,0.18)';
-                        color = '#F44336';
-                        border = 'rgba(244,67,54,0.4)';
-                      } else if (!isGroup) {
-                        bg = 'rgba(255,215,0,0.12)';
-                        color = 'var(--wc-gold)';
-                        border = 'rgba(255,215,0,0.3)';
-                      }
-                      return (
-                        <button
-                          key={match.id}
-                          onClick={(e) => { e.stopPropagation(); handleMatchClick(match); }}
-                          title={locked ? getLockReason(match, allDisplayMatches) : (isGroup ? `المجموعة ${match.groupLetter}` : ROUND_LABEL_AR[getMatchRound(match)!])}
-                          className="w-full text-right px-1 py-0.5 md:px-1.5 md:py-1 rounded text-[10px] md:text-[11px] font-medium transition-all hover:opacity-80 truncate block"
-                          style={{
-                            background: bg,
-                            color,
-                            border: `1px solid ${border}`,
-                            cursor: locked ? 'not-allowed' : 'pointer',
-                            opacity: locked ? 0.65 : 1,
-                          }}>
-                          <span className="font-mono opacity-70 ml-1">#{match.matchNumber}</span>
-                          {homeAbbr} × {awayAbbr}
-                          {locked && <span className="mr-0.5">🔒</span>}
-                          {hasPrediction && !locked && <span className="mr-0.5">✓</span>}
-                        </button>
-                      );
-                    })}
-                    {overflow > 0 && (
-                      <div className="text-[10px] md:text-[11px] text-center py-0.5" style={{ color: 'var(--text-muted)' }}>
-                        +{overflow} المزيد
-                      </div>
-                    )}
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{dayNum}</div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-2 text-xs">
+                    {finishedCount > 0 && <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(46,125,50,0.2)', color: '#4CAF50' }}>{finishedCount} منتهية</span>}
+                    {upcomingCount > 0 && <span className="px-2 py-0.5 rounded-full" style={{ background: 'rgba(79,195,247,0.2)', color: '#4FC3F7' }}>{upcomingCount} قادمة</span>}
+                  </div>
+                  <span className="text-lg transition-transform" style={{ color: 'var(--text-muted)', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
+                </div>
+              </button>
+              {isExpanded && (
+                <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  {dayMatches.map(match => {
+                    const locked = isMatchLocked(match, allDisplayMatches);
+                    return (
+                      <MatchScheduleCard
+                        key={match.id}
+                        match={match}
+                        onClick={() => handleMatchClick(match)}
+                        locked={locked}
+                        lockReason={locked ? getLockReason(match, allDisplayMatches) : undefined}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        };
 
-      {filteredMatches.length === 0 && (
+        return (
+          <div className="space-y-3">
+            {groupDates.length > 0 && (
+              <>
+                <div className="text-center py-3 rounded-lg" style={{ background: 'rgba(46,125,50,0.1)', border: '1px solid rgba(46,125,50,0.2)' }}>
+                  <span className="text-sm font-bold" style={{ color: '#4CAF50' }}>⚽ دور المجموعات</span>
+                </div>
+                {groupDates.map(renderDate)}
+              </>
+            )}
+            {groupDates.length > 0 && koDates.length > 0 && (
+              <div className="text-center py-4 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(139,0,0,0.2), rgba(255,215,0,0.1))', border: '1px solid var(--wc-gold)' }}>
+                <span className="text-base font-bold" style={{ color: 'var(--wc-gold)' }}>🏆 الأدوار الإقصائية</span>
+              </div>
+            )}
+            {koDates.length > 0 && (
+              <>
+                <div className="text-center py-3 rounded-lg" style={{ background: 'rgba(139,0,0,0.1)', border: '1px solid rgba(139,0,0,0.2)' }}>
+                  <span className="text-sm font-bold" style={{ color: '#F44336' }}>🏆 الأدوار الإقصائية</span>
+                </div>
+                {koDates.map(renderDate)}
+              </>
+            )}
+          </div>
+        );
+      })()}
+
+      {sortedDates.length === 0 && (
         <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>
           <div className="text-4xl mb-3">📭</div>
           <p>لا توجد مباريات في هذا التصنيف</p>
