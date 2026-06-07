@@ -2019,7 +2019,7 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
   };
 
   const handleVerifyAll = async () => {
-    const unverified = users.filter(u => !u.isAdmin && u.emailVerified === false);
+    const unverified = users.filter(u => !u.isAdmin && !u.banned && u.emailVerified === false);
     if (unverified.length === 0) {
       showResult(true, 'جميع المستخدمين مؤكدين بالفعل');
       return;
@@ -2147,10 +2147,10 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                 <td className="px-3 py-2">
                   {u.banned ? (
                     <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>محظور</span>
-                  ) : u.emailVerified === false ? (
-                    <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(255,165,0,0.15)', color: '#FFA500' }}>غير مؤكد</span>
-                  ) : (
+                  ) : u.isAdmin || u.emailVerified !== false ? (
                     <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>نشط</span>
+                  ) : (
+                    <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(255,165,0,0.15)', color: '#FFA500' }}>غير مؤكد</span>
                   )}
                 </td>
                 <td className="px-3 py-2">
@@ -2162,7 +2162,7 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                   ) : (
                     <div className="flex gap-1">
                       <button onClick={() => setEditingUser(u)} className="p-1 rounded" style={{ color: 'var(--wc-sky)' }}><Edit className="h-4 w-4" /></button>
-                      {!u.isAdmin && u.emailVerified === false && (
+                      {!u.isAdmin && !u.banned && u.emailVerified === false && (
                         <button onClick={() => handleVerifyEmail(u)} className="p-1 rounded" style={{ color: '#4FC3F7' }} title="تأكيد البريد">
                           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                         </button>
