@@ -76,7 +76,7 @@ export async function POST(request: Request) {
           '<p style="margin:0 0 10px 0;">مرحباً ' + name + '،</p>' +
           '<p style="margin:0 0 15px 0;">تم إنشاء حسابك بنجاح في ملك التوقعات! يمكنك الآن تسجيل الدخول والبدء في التوقعات.</p>' +
           '<div style="text-align:center;margin:20px 0;">' +
-          '<a href="' + BASE_URL + '" style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#FFD700,#FFA000);color:#000;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">الدخول إلى التطبيق</a></div></div>' +
+          '<a href="' + BASE_URL + '" style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#FFD700,#FFA000);border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;"><span style="color:#000000;">الدخول إلى التطبيق</span></a></div></div>' +
           '<div style="text-align:center;padding-top:15px;border-top:1px solid rgba(255,255,255,0.1);margin-top:15px;">' +
           '<p style="font-size:12px;color:#666;">ملك التوقعات - فيفا ٢٠٢٦ | مجموعة المرشد القابضة</p></div></div>';
 
