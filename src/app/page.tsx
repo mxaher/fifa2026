@@ -691,11 +691,13 @@ function MatchesView({ user }: { user: User }) {
 
   useEffect(() => {
     let active = true;
-    apiFetch(`/api/matches?userId=${user.id}`).then(data => {
+    const fetchData = () => apiFetch(`/api/matches?userId=${user.id}`).then(data => {
       if (active && data.matches) setMatches(data.matches);
       if (active) setLoading(false);
     });
-    return () => { active = false; };
+    fetchData();
+    const iv = setInterval(fetchData, 30000);
+    return () => { active = false; clearInterval(iv); };
   }, [user.id]);
 
   const filteredMatches = matches.filter(m => {
@@ -740,13 +742,17 @@ function MatchesView({ user }: { user: User }) {
       </div>
 
       {/* Groups */}
-      {Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([group, groupMatches]) => (
+      {Object.entries(groups).sort(([a], [b]) => {
+        if (a === 'knockout') return 1;
+        if (b === 'knockout') return -1;
+        return a.localeCompare(b);
+      }).map(([group, groupMatches]) => (
         <div key={group} className="mb-4">
           <button onClick={() => toggleGroup(group)}
             className="w-full flex items-center justify-between px-4 py-3 rounded-lg mb-2 transition-all"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
             <span className="font-bold text-sm" style={{ color: 'var(--wc-gold)' }}>
-              ⚽ المجموعة {group} ({groupMatches.length} مباراة)
+              {group === 'knockout' ? '🏆 الأدوار الإقصائية' : `⚽ المجموعة ${group}`} ({groupMatches.length} مباراة)
             </span>
             {expandedGroups.has(group) ? <ChevronUp className="h-4 w-4" style={{ color: 'var(--text-muted)' }} /> : <ChevronDown className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />}
           </button>
