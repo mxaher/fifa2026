@@ -129,11 +129,7 @@ export function buildBracketData(matches: MatchWithTeams[], teams: TeamInfo[]): 
           : knMatch.awayScore > knMatch.homeScore ? knMatch.awayTeam?.id : null)
         : null,
       predictedWinner: knMatch?.prediction
-        ? (knMatch.prediction.homeScore > knMatch.prediction.awayScore
-            ? knMatch.homeTeam?.id
-            : knMatch.prediction.awayScore > knMatch.prediction.homeScore
-              ? knMatch.awayTeam?.id
-              : null)
+        ? null
         : null,
       date: knMatch?.kickoff || null,
       venue: knMatch?.venue || null,
