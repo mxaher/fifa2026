@@ -1890,7 +1890,7 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', avatarEmoji: '⚽', department: '' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', avatarEmoji: '⚽', department: '', isAdmin: false });
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const fetchUsers = async () => {
@@ -1943,7 +1943,7 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
       const data = await res.json();
       if (data.user) {
         showResult(true, `تم إضافة ${newUser.name}`);
-        setNewUser({ name: '', email: '', password: '', avatarEmoji: '⚽', department: '' });
+        setNewUser({ name: '', email: '', password: '', avatarEmoji: '⚽', department: '', isAdmin: false });
         setShowAddForm(false);
         fetchUsers();
       } else {
@@ -2083,6 +2083,12 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                 <option value="">اختر القسم...</option>
                 {departments.map((d: any) => <option key={d.id} value={d.id}>{d.nameAr || d.name}</option>)}
               </select>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={newUser.isAdmin}
+                  onChange={e => setNewUser({ ...newUser, isAdmin: e.target.checked })}
+                  className="rounded" />
+                <label className="text-sm" style={{ color: 'var(--text-secondary)' }}>مسؤول</label>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleAddUser}
@@ -2122,7 +2128,11 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                     <Input value={editingUser.name} onChange={e => setEditingUser({ ...editingUser, name: e.target.value })}
                       className="h-8 text-xs" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
                   ) : (
-                    <span>{u.avatarEmoji} {u.name} {u.isAdmin && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,215,0,0.2)', color: 'var(--wc-gold)' }}>admin</span>}</span>
+                    <span>{u.avatarEmoji} {u.name} {u.isAdmin && u.email === 'admin@fifa26.almarshad.com' ? (
+                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,215,0,0.2)', color: 'var(--wc-gold)' }}>🛡️ مشرف أساسي</span>
+                    ) : u.isAdmin ? (
+                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,215,0,0.2)', color: 'var(--wc-gold)' }}>admin</span>
+                    ) : ''}</span>
                   )}
                 </td>
                 <td className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -2154,7 +2164,9 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  {editingUser?.id === u.id ? (
+                  {u.email === 'admin@fifa26.almarshad.com' ? (
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
+                  ) : editingUser?.id === u.id ? (
                     <div className="flex gap-1">
                       <button onClick={handleUpdateUser} className="p-1 rounded" style={{ color: '#22c55e' }}><Save className="h-4 w-4" /></button>
                       <button onClick={() => setEditingUser(null)} className="p-1 rounded" style={{ color: 'var(--text-muted)' }}><X className="h-4 w-4" /></button>

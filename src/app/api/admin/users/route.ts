@@ -94,6 +94,8 @@ export async function POST(request: Request) {
   }
 }
 
+const SUPER_ADMIN_EMAIL = 'admin@fifa26.almarshad.com';
+
 // PUT — Update user (name, email, avatarEmoji, isAdmin, banned, password)
 export async function PUT(request: Request) {
   try {
@@ -107,6 +109,15 @@ export async function PUT(request: Request) {
     }
 
     const db = getClient();
+
+    // Protect super admin from status changes
+    const existing = await db.select().from(schema.users).where(eq(schema.users.id, id)).limit(1);
+    if (existing.length > 0 && existing[0].email === SUPER_ADMIN_EMAIL) {
+      if (isAdmin !== undefined || banned !== undefined || emailVerified !== undefined) {
+        return NextResponse.json({ error: "لا يمكن تغيير حالة المشرف الأساسي" }, { status: 403 });
+      }
+    }
+
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
 
     if (name !== undefined) updateData.name = name;
@@ -149,10 +160,10 @@ export async function DELETE(request: Request) {
 
     const db = getClient();
 
-    // Don't delete admin user
+    // Don't delete super admin
     const user = await db.select().from(schema.users).where(eq(schema.users.id, id)).limit(1);
-    if (user.length > 0 && user[0].isAdmin) {
-      return NextResponse.json({ error: "لا يمكن حذف حساب المشرف" }, { status: 400 });
+    if (user.length > 0 && user[0].email === SUPER_ADMIN_EMAIL) {
+      return NextResponse.json({ error: "لا يمكن حذف المشرف الأساسي" }, { status: 400 });
     }
 
     // Find matches where this user had scored predictions (before deleting)
