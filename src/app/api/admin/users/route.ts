@@ -101,7 +101,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
-    const { id, name, email, avatarEmoji, isAdmin, banned, password, department } = await request.json();
+    const { id, name, email, avatarEmoji, isAdmin, banned, password, department, emailVerified } = await request.json();
     if (!id) {
       return NextResponse.json({ error: "User ID مطلوب" }, { status: 400 });
     }
@@ -115,6 +115,7 @@ export async function PUT(request: Request) {
     if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
     if (banned !== undefined) updateData.banned = banned;
     if (department !== undefined) updateData.department = department;
+    if (emailVerified !== undefined) updateData.emailVerified = emailVerified;
 
     if (password) {
       if (password.length < 6) {

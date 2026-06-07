@@ -1919,6 +1919,21 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
     } catch { showResult(false, 'خطأ في الاتصال'); }
   };
 
+  const handleVerifyEmail = async (user: any) => {
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+        body: JSON.stringify({ id: user.id, emailVerified: true }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showResult(true, 'تم تأكيد البريد الإلكتروني لـ ' + user.name);
+        fetchUsers();
+      }
+    } catch { showResult(false, 'خطأ في الاتصال'); }
+  };
+
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
 
   return (
@@ -2019,6 +2034,8 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                 <td className="px-3 py-2">
                   {u.banned ? (
                     <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>محظور</span>
+                  ) : u.emailVerified === false ? (
+                    <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(255,165,0,0.15)', color: '#FFA500' }}>غير مؤكد</span>
                   ) : (
                     <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>نشط</span>
                   )}
@@ -2032,6 +2049,11 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
                   ) : (
                     <div className="flex gap-1">
                       <button onClick={() => setEditingUser(u)} className="p-1 rounded" style={{ color: 'var(--wc-sky)' }}><Edit className="h-4 w-4" /></button>
+                      {!u.isAdmin && u.emailVerified === false && (
+                        <button onClick={() => handleVerifyEmail(u)} className="p-1 rounded" style={{ color: '#4FC3F7' }} title="تأكيد البريد">
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                        </button>
+                      )}
                       {!u.isAdmin && <button onClick={() => handleToggleBan(u)} className="p-1 rounded" style={{ color: u.banned ? '#22c55e' : '#f59e0b' }}><Ban className="h-4 w-4" /></button>}
                       {!u.isAdmin && <button onClick={() => handleDeleteUser(u)} className="p-1 rounded" style={{ color: '#ef4444' }}><Trash2 className="h-4 w-4" /></button>}
                     </div>
