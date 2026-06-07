@@ -80,7 +80,8 @@ function GroupCard({ group, compact }: { group: BracketData['groups'][0]; compac
         </thead>
         <tbody>
           {standings.map((s, i) => {
-            const isTop2 = i < 2;
+            const hasRank = s.position > 0;
+            const isTop2 = hasRank && i < 2;
             return (
               <tr key={s.teamId} style={{
                 background: isTop2 ? COLORS.goldSurface : undefined,
@@ -88,7 +89,7 @@ function GroupCard({ group, compact }: { group: BracketData['groups'][0]; compac
               }}>
                 <td className="px-2 py-1 text-right" style={{ color: isTop2 ? COLORS.gold : COLORS.muted }}>
                   {isTop2 && <span className="text-[8px] mr-0.5">⬤</span>}
-                  {s.position}
+                  {hasRank ? s.position : '-'}
                 </td>
                 <td className="px-2 py-1 text-right truncate max-w-0" style={{}}>
                   <FlagImg id={s.teamId} name={s.teamName} className="ml-1" />

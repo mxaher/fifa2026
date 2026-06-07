@@ -78,6 +78,7 @@ export function computeGroupStandings(matches: MatchWithTeams[], teams: TeamInfo
   }
 
   const teamMap = new Map(teams.map(t => [t.id, t]));
+  const hasAnyPlayed = Array.from(stats.values()).some(s => s.played > 0);
   const standings: GroupStanding[] = Array.from(stats.entries())
     .map(([teamId, s]) => {
       const t = teamMap.get(teamId)!;
@@ -87,10 +88,12 @@ export function computeGroupStandings(matches: MatchWithTeams[], teams: TeamInfo
         gf: s.gf, ga: s.ga, gd: s.gf - s.ga, pts: s.pts,
         position: 0,
       };
-    })
-    .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+    });
 
-  standings.forEach((s, i) => s.position = i + 1);
+  if (hasAnyPlayed) {
+    standings.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+    standings.forEach((s, i) => s.position = i + 1);
+  }
   return standings;
 }
 
