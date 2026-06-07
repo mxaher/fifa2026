@@ -71,7 +71,7 @@ function generateDailySummaryHTML(data: {
           <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;">${e.correct}</td>
         </tr>`
       ).join("")
-    : '<tr><td colspan="5" style="padding:16px;text-align:center;color:#888;">لا يوجد توقعات بعد</td></tr>';
+    : '<tr><td colspan="5" style="padding:16px;text-align:center;color:#888;">لا يوجد ترتيب بعد</td></tr>';
 
   const predictionRows = data.recentPredictions.length > 0
     ? data.recentPredictions.slice(0, 15).map(p => `
@@ -264,21 +264,23 @@ export async function GET(request: Request) {
       }))
       .sort((a, b) => a.matchNumber - b.matchNumber);
 
-    // Leaderboard (top 10)
-    const leaderboard = allUsers
+    // Leaderboard (top 10) — only show if at least one user has points
+    const sorted = allUsers
       .filter(u => !u.isAdmin)
-      .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
-      .slice(0, 10)
-      .map((u, i) => {
-        const preds = allPredictions.filter(p => p.userId === u.id && p.points !== null);
-        return {
-          rank: i + 1,
-          name: u.name,
-          points: u.totalPoints ?? 0,
-          exact: preds.filter(p => p.pointsType === "exact").length,
-          correct: preds.filter(p => p.pointsType === "correct").length,
-        };
-      });
+      .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0));
+    const hasAnyPoints = sorted.some(u => (u.totalPoints ?? 0) > 0);
+    const leaderboard = hasAnyPoints
+      ? sorted.slice(0, 10).map((u, i) => {
+          const preds = allPredictions.filter(p => p.userId === u.id && p.points !== null);
+          return {
+            rank: i + 1,
+            name: u.name,
+            points: u.totalPoints ?? 0,
+            exact: preds.filter(p => p.pointsType === "exact").length,
+            correct: preds.filter(p => p.pointsType === "correct").length,
+          };
+        })
+      : [];
 
     // Recent predictions today
     const recentPredictions = allPredictions
@@ -421,20 +423,22 @@ export async function POST(request: Request) {
       }))
       .sort((a, b) => a.matchNumber - b.matchNumber);
 
-    const leaderboard = allUsers
+    const sortedUsers = allUsers
       .filter(u => !u.isAdmin)
-      .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
-      .slice(0, 10)
-      .map((u, i) => {
-        const preds = allPredictions.filter(p => p.userId === u.id && p.points !== null);
-        return {
-          rank: i + 1,
-          name: u.name,
-          points: u.totalPoints ?? 0,
-          exact: preds.filter(p => p.pointsType === "exact").length,
-          correct: preds.filter(p => p.pointsType === "correct").length,
-        };
-      });
+      .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0));
+    const hasPoints = sortedUsers.some(u => (u.totalPoints ?? 0) > 0);
+    const leaderboard = hasPoints
+      ? sortedUsers.slice(0, 10).map((u, i) => {
+          const preds = allPredictions.filter(p => p.userId === u.id && p.points !== null);
+          return {
+            rank: i + 1,
+            name: u.name,
+            points: u.totalPoints ?? 0,
+            exact: preds.filter(p => p.pointsType === "exact").length,
+            correct: preds.filter(p => p.pointsType === "correct").length,
+          };
+        })
+      : [];
 
     const recentPredictions = allPredictions
       .filter(p => p.createdAt >= startOfDay && p.createdAt <= endOfDay)
