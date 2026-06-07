@@ -34,6 +34,7 @@ interface User {
   email: string;
   avatarEmoji: string | null;
   totalPoints: number;
+  isAdmin?: boolean;
   department?: string | null;
 }
 
@@ -647,7 +648,7 @@ function Header({ user, activeTab, onTabChange, onLogout }: { user: User; active
             {user.avatarEmoji} {user.name}
           </span>
           {user.department && <span className="hidden lg:inline text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(79,195,247,0.15)', color: 'var(--wc-sky)' }}>{user.department}</span>}
-          <span className="hidden sm:inline font-bebas text-sm" style={{ color: 'var(--wc-gold)' }}>{user.totalPoints} pts</span>
+          {!user.isAdmin && <span className="hidden sm:inline font-bebas text-sm" style={{ color: 'var(--wc-gold)' }}>{user.totalPoints} pts</span>}
 
           <Button variant="ghost" size="sm" onClick={onLogout} className="hidden md:inline-flex text-xs"
             style={{ color: 'var(--text-muted)' }}>
@@ -927,109 +928,154 @@ function MatchesView({ user }: { user: User }) {
 
 /* ─── Predictions View ─── */
 function PredictionsView({ user }: { user: User }) {
-  const [predictions, setPredictions] = useState<any[]>([]);
+  const [allData, setAllData] = useState<{ predictions: any[]; matches: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const [filterMatch, setFilterMatch] = useState('all');
 
   useEffect(() => {
     (async () => {
-      const data = await apiFetch(`/api/predictions?userId=${user.id}`);
-      if (data.predictions) setPredictions(data.predictions);
+      const data = await apiFetch('/api/predictions');
+      if (data.predictions) {
+        const matches = [...new Map(data.predictions.filter((p: any) => p.match).map((p: any) => [p.match.matchNumber, p.match])).values()]
+          .sort((a: any, b: any) => a.matchNumber - b.matchNumber);
+        setAllData({ predictions: data.predictions, matches });
+      }
       setLoading(false);
     })();
-  }, [user.id]);
-
-  const filtered = predictions.filter(p => {
-    if (filter === 'exact') return p.pointsType === 'exact';
-    if (filter === 'correct') return p.pointsType === 'correct';
-    if (filter === 'wrong') return p.pointsType === 'wrong';
-    if (filter === 'pending') return !p.pointsType;
-    return true;
-  });
-
-  const stats = {
-    total: predictions.length,
-    exact: predictions.filter(p => p.pointsType === 'exact').length,
-    correct: predictions.filter(p => p.pointsType === 'correct').length,
-    wrong: predictions.filter(p => p.pointsType === 'wrong').length,
-    pending: predictions.filter(p => !p.pointsType).length,
-  };
+  }, []);
 
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
 
+  if (!allData || allData.matches.length === 0) {
+    return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>لا توجد توقعات بعد</div>;
+  }
+
+  const filteredMatches = filterMatch === 'all'
+    ? allData.matches
+    : allData.matches.filter((m: any) => {
+        const preds = allData.predictions.filter((p: any) => p.matchId === m.id);
+        if (filterMatch === 'exact') return preds.some((p: any) => p.pointsType === 'exact');
+        if (filterMatch === 'correct') return preds.some((p: any) => p.pointsType === 'correct');
+        if (filterMatch === 'wrong') return preds.some((p: any) => p.pointsType === 'wrong');
+        if (filterMatch === 'pending') return preds.some((p: any) => !p.pointsType);
+        return true;
+      });
+
   return (
     <div>
-      {/* Stats summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'الكل', count: stats.total, color: 'var(--wc-sky)' },
-          { label: 'دقيق', count: stats.exact, color: 'var(--pts-exact)' },
-          { label: 'صحيح', count: stats.correct, color: 'var(--pts-correct)' },
-          { label: 'خاطئ', count: stats.wrong, color: 'var(--pts-wrong)' },
-        ].map(s => (
-          <div key={s.label} className="text-center p-3 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-            <div className="font-bebas text-3xl" style={{ color: s.color }}>{s.count}</div>
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
       {/* Filter */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-        {[{ id: 'all', label: `الكل ${stats.total}` }, { id: 'exact', label: `دقيق ${stats.exact}` }, { id: 'correct', label: `صحيح ${stats.correct}` }, { id: 'wrong', label: `خاطئ ${stats.wrong}` }, { id: 'pending', label: `منتظر ${stats.pending}` }].map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)}
-            className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        {[
+          { id: 'all', label: 'الكل' },
+          { id: 'exact', label: 'دقيق' },
+          { id: 'correct', label: 'صحيح' },
+          { id: 'wrong', label: 'خاطئ' },
+          { id: 'pending', label: 'منتظر' },
+        ].map(f => (
+          <button key={f.id} onClick={() => setFilterMatch(f.id)}
+            className="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all"
             style={{
-              background: filter === f.id ? 'rgba(255,215,0,0.15)' : 'var(--bg-card)',
-              color: filter === f.id ? 'var(--wc-gold)' : 'var(--text-muted)',
-              border: `1px solid ${filter === f.id ? 'var(--wc-gold)' : 'var(--border-color)'}`,
+              background: filterMatch === f.id ? 'rgba(255,215,0,0.15)' : 'var(--bg-card)',
+              color: filterMatch === f.id ? 'var(--wc-gold)' : 'var(--text-muted)',
+              border: `1px solid ${filterMatch === f.id ? 'var(--wc-gold)' : 'var(--border-color)'}`,
             }}>
             {f.label}
           </button>
         ))}
       </div>
 
-      {/* Prediction cards */}
-      <div className="grid gap-3">
-        {filtered.map(p => {
-          const pointsColor = p.pointsType === 'exact' ? 'var(--pts-exact)' : p.pointsType === 'correct' ? 'var(--pts-correct)' : p.pointsType === 'wrong' ? 'var(--pts-wrong)' : 'var(--pts-pending)';
+      {/* Matches with predictions */}
+      <div className="space-y-6">
+        {filteredMatches.map((match: any) => {
+          const matchPredictions = allData.predictions.filter((p: any) => p.matchId === match.id);
+          const hasResult = match.homeScore != null && match.awayScore != null;
+
+          // Group predictions by score key "homeScore:awayScore"
+          const groups = new Map<string, any[]>();
+          for (const p of matchPredictions) {
+            const key = `${p.homeScore}:${p.awayScore}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key)!.push(p);
+          }
+          const sortedGroups = Array.from(groups.entries()).sort(([a], [b]) => {
+            const [ah, aa] = a.split(':').map(Number);
+            const [bh, ba] = b.split(':').map(Number);
+            return bh - ah || ba - aa;
+          });
+
           return (
-            <div key={p.id} className="rounded-xl p-4 animate-fade-in" style={{ background: 'var(--gradient-card)', border: '1px solid var(--border-color)' }}>
-              <div className="flex items-center justify-between">
+            <div key={match.id} className="rounded-xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+              {/* Match header */}
+              <div className="flex items-center justify-between px-4 py-3" style={{ background: 'rgba(255,215,0,0.08)', borderBottom: '1px solid var(--border-color)' }}>
                 <div className="flex items-center gap-3">
-                  <FlagImg id={p.match?.homeTeam?.id} name={p.match?.homeTeam?.name} className="text-xl" />
-                  <div className="text-center">
-                    <div className="font-bebas text-xl">
-                      <span style={{ color: 'var(--wc-sky)' }}>{p.homeScore}</span>
-                      <span style={{ color: 'var(--text-muted)' }}> : </span>
-                      <span style={{ color: 'var(--wc-sky)' }}>{p.awayScore}</span>
-                    </div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>توقعك</div>
-                  </div>
-                  <FlagImg id={p.match?.awayTeam?.id} name={p.match?.awayTeam?.name} className="text-xl" />
+                  <FlagImg id={match.homeTeam?.id} name={match.homeTeam?.name} className="text-lg" />
+                  <span className="font-bold text-sm">{match.homeTeam?.nameAr || match.homeTeam?.name}</span>
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>VS</span>
+                  <FlagImg id={match.awayTeam?.id} name={match.awayTeam?.name} className="text-lg" />
+                  <span className="font-bold text-sm">{match.awayTeam?.nameAr || match.awayTeam?.name}</span>
                 </div>
-
-                {p.match?.homeScore !== null && p.match?.awayScore !== null ? (
-                  <div className="text-center">
-                    <div className="font-bebas text-xl" style={{ color: 'var(--wc-gold)' }}>
-                      {p.match.homeScore} : {p.match.awayScore}
-                    </div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>النتيجة</div>
+                {hasResult && (
+                  <div className="font-bebas text-xl" style={{ color: 'var(--wc-gold)' }}>
+                    {match.homeScore} : {match.awayScore}
                   </div>
-                ) : null}
+                )}
+              </div>
 
-                <span className="px-2 py-1 rounded-full text-xs font-bold"
-                  style={{ background: pointsColor + '22', color: pointsColor }}>
-                  {p.pointsType === 'exact' ? 'دقيق +3' : p.pointsType === 'correct' ? 'صحيح +2' : p.pointsType === 'wrong' ? 'خاطئ 0' : 'منتظر'}
-                </span>
+              {/* Prediction groups */}
+              <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+                {sortedGroups.map(([scoreKey, preds]) => {
+                  const [hs, as] = scoreKey.split(':').map(Number);
+                  const isExact = hasResult && hs === match.homeScore && as === match.awayScore;
+                  const isCorrect = hasResult && !isExact && ((hs > as && match.homeScore > match.awayScore) || (hs < as && match.homeScore < match.awayScore) || (hs === as && match.homeScore === match.awayScore));
+                  const isWrong = hasResult && !isExact && !isCorrect;
+                  const pointsColor = isExact ? 'var(--pts-exact)' : isCorrect ? 'var(--pts-correct)' : isWrong ? 'var(--pts-wrong)' : 'var(--pts-pending)';
+                  const bgColor = isExact ? 'rgba(76,175,80,0.08)' : isCorrect ? 'rgba(33,150,243,0.08)' : 'transparent';
+
+                  return (
+                    <div key={scoreKey} className="px-4 py-3" style={{ background: bgColor }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bebas text-lg" style={{ color: pointsColor }}>{hs}</span>
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>:</span>
+                          <span className="font-bebas text-lg" style={{ color: pointsColor }}>{as}</span>
+                          {hasResult && (
+                            <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: pointsColor + '22', color: pointsColor }}>
+                              {isExact ? '+3' : isCorrect ? '+2' : isWrong ? '0' : ''}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          {preds.length} {preds.length === 1 ? 'مستخدم' : 'مستخدمين'}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {preds.map((p: any) => (
+                          <span key={p.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                            style={{
+                              background: p.userId === user.id ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.06)',
+                              color: p.userId === user.id ? 'var(--wc-gold)' : 'var(--text-primary)',
+                              border: p.userId === user.id ? '1px solid var(--wc-gold)' : '1px solid transparent',
+                            }}>
+                            {p.user?.avatarEmoji || ''} {p.user?.name || '???'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {matchPredictions.length === 0 && (
+                  <div className="px-4 py-3 text-center text-xs" style={{ color: 'var(--text-muted)' }}>
+                    لا توجد توقعات لهذه المباراة
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {filtered.length === 0 && (
-        <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>لا توجد توقعات بعد</div>
+      {filteredMatches.length === 0 && (
+        <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>لا توجد نتائج للفلتر المحدد</div>
       )}
     </div>
   );

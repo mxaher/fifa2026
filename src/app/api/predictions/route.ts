@@ -8,23 +8,25 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const userId = url.searchParams.get("userId");
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
-    }
+    const allPredictions = userId
+      ? await db.select().from(schema.predictions).where(eq(schema.predictions.userId, userId))
+      : await db.select().from(schema.predictions);
 
-    const predictions = await db.select().from(schema.predictions).where(eq(schema.predictions.userId, userId));
     const allMatches = await db.select().from(schema.matches);
     const allTeams = await db.select().from(schema.teams);
+    const allUsers = await db.select().from(schema.users);
     const teamMap = new Map(allTeams.map(t => [t.id, t]));
     const matchMap = new Map(allMatches.map(m => [m.id, m]));
+    const userMap = new Map(allUsers.filter(u => !u.isAdmin).map(u => [u.id, { id: u.id, name: u.name, avatarEmoji: u.avatarEmoji, department: u.department }]));
 
-    const predictionsWithDetails = predictions.map(pred => ({
+    const predictionsWithDetails = allPredictions.map(pred => ({
       ...pred,
       match: matchMap.get(pred.matchId) ? {
         ...matchMap.get(pred.matchId)!,
         homeTeam: teamMap.get(matchMap.get(pred.matchId)!.homeTeamId),
         awayTeam: teamMap.get(matchMap.get(pred.matchId)!.awayTeamId),
       } : null,
+      user: userMap.get(pred.userId) || null,
     }));
 
     return NextResponse.json({ predictions: predictionsWithDetails });
