@@ -913,8 +913,11 @@ function MatchesView({ user }: { user: User }) {
       </div>
 
       {/* Date-based schedule */}
-      <div className="space-y-3">
-        {sortedDates.map(date => {
+      {(() => {
+        const groupDates = sortedDates.filter(d => (matchesByDate.get(d) || []).some(m => m.groupLetter));
+        const koDates = sortedDates.filter(d => (matchesByDate.get(d) || []).some(m => !m.groupLetter));
+
+        const renderDate = (date: string) => {
           const dateObj = new Date(date + 'T12:00:00');
           const dayName = dateObj.toLocaleDateString('ar-SA', { calendar: 'gregory', weekday: 'long', timeZone: 'Asia/Riyadh' });
           const dayNum = dateObj.toLocaleDateString('ar-SA', { calendar: 'gregory', month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh' });
@@ -949,33 +952,41 @@ function MatchesView({ user }: { user: User }) {
               </button>
               {isExpanded && (
                 <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
-                  {(() => {
-                    const groupMatches = dayMatches.filter(m => m.groupLetter);
-                    const knockoutMatches = dayMatches.filter(m => !m.groupLetter);
-                    return (
-                      <>
-                        {groupMatches.map(match => (
-                          <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
-                        ))}
-                        {groupMatches.length > 0 && knockoutMatches.length > 0 && (
-                          <div className="flex items-center gap-3 px-4 py-2">
-                            <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />
-                            <span className="text-xs font-bold" style={{ color: 'var(--wc-gold)' }}>🏆 الأدوار الإقصائية</span>
-                            <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />
-                          </div>
-                        )}
-                        {knockoutMatches.map(match => (
-                          <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
-                        ))}
-                      </>
-                    );
-                  })()}
+                  {dayMatches.map(match => (
+                    <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
+                  ))}
                 </div>
               )}
             </div>
           );
-        })}
-      </div>
+        };
+
+        return (
+          <div className="space-y-3">
+            {groupDates.length > 0 && (
+              <>
+                <div className="text-center py-3 rounded-lg" style={{ background: 'rgba(46,125,50,0.1)', border: '1px solid rgba(46,125,50,0.2)' }}>
+                  <span className="text-sm font-bold" style={{ color: '#4CAF50' }}>⚽ دور المجموعات</span>
+                </div>
+                {groupDates.map(renderDate)}
+              </>
+            )}
+            {groupDates.length > 0 && koDates.length > 0 && (
+              <div className="text-center py-4 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(139,0,0,0.2), rgba(255,215,0,0.1))', border: '1px solid var(--wc-gold)' }}>
+                <span className="text-base font-bold" style={{ color: 'var(--wc-gold)' }}>🏆 الأدوار الإقصائية</span>
+              </div>
+            )}
+            {koDates.length > 0 && (
+              <>
+                <div className="text-center py-3 rounded-lg" style={{ background: 'rgba(139,0,0,0.1)', border: '1px solid rgba(139,0,0,0.2)' }}>
+                  <span className="text-sm font-bold" style={{ color: '#F44336' }}>🏆 الأدوار الإقصائية</span>
+                </div>
+                {koDates.map(renderDate)}
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {sortedDates.length === 0 && (
         <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>
