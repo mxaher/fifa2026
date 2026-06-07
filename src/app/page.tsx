@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
@@ -131,8 +131,14 @@ function MatchCard({ match, userId, onSaved }: { match: MatchWithTeams; userId: 
       <div className="flex items-center justify-between gap-2">
         {/* Home team */}
         <div className="flex flex-col items-center text-center flex-1 min-w-0">
-          <FlagImg id={match.homeTeam.id} name={match.homeTeam.name} className="text-2xl" />
-          <span className="text-sm font-bold truncate mt-1">{match.homeTeam.nameAr || match.homeTeam.name}</span>
+          {match.homeTeam ? (
+            <>
+              <FlagImg id={match.homeTeam.id} name={match.homeTeam.name} className="text-2xl" />
+              <span className="text-sm font-bold truncate mt-1">{match.homeTeam.nameAr || match.homeTeam.name}</span>
+            </>
+          ) : (
+            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>TBD</span>
+          )}
         </div>
 
         {/* Score / Prediction */}
@@ -168,8 +174,14 @@ function MatchCard({ match, userId, onSaved }: { match: MatchWithTeams; userId: 
 
         {/* Away team */}
         <div className="flex flex-col items-center text-center flex-1 min-w-0">
-          <FlagImg id={match.awayTeam.id} name={match.awayTeam.name} className="text-2xl" />
-          <span className="text-sm font-bold truncate mt-1">{match.awayTeam.nameAr || match.awayTeam.name}</span>
+          {match.awayTeam ? (
+            <>
+              <FlagImg id={match.awayTeam.id} name={match.awayTeam.name} className="text-2xl" />
+              <span className="text-sm font-bold truncate mt-1">{match.awayTeam.nameAr || match.awayTeam.name}</span>
+            </>
+          ) : (
+            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>TBD</span>
+          )}
         </div>
       </div>
 
@@ -676,12 +688,68 @@ function Header({ user, activeTab, onTabChange, onLogout }: { user: User; active
   );
 }
 
+function makeVirtualKnockout(matchNumber: number, venue: string, kickoff: string, homeId?: string, awayId?: string): MatchWithTeams {
+  return {
+    id: `ko-${matchNumber}`,
+    matchNumber,
+    stage: 'knockout',
+    groupLetter: null,
+    kickoff,
+    homeScore: null,
+    awayScore: null,
+    status: 'upcoming',
+    venue,
+    homeTeam: homeId ? { id: homeId, name: '', nameAr: '', flag: '', groupLetter: '', fifaRank: null } as any : null,
+    awayTeam: awayId ? { id: awayId, name: '', nameAr: '', flag: '', groupLetter: '', fifaRank: null } as any : null,
+    prediction: null,
+  };
+}
+
+const KNOCKOUT_MATCHES: MatchWithTeams[] = [
+  makeVirtualKnockout(73, 'Estadio Azteca', '2026-06-28T16:00:00Z', 'MEX'),
+  makeVirtualKnockout(74, 'SoFi Stadium', '2026-06-28T19:00:00Z', 'USA'),
+  makeVirtualKnockout(75, 'NRG Stadium', '2026-06-28T21:00:00Z', 'GER'),
+  makeVirtualKnockout(76, 'MetLife Stadium', '2026-06-29T16:00:00Z', 'BEL'),
+  makeVirtualKnockout(77, 'AT&T Stadium', '2026-06-29T19:00:00Z', 'FRA'),
+  makeVirtualKnockout(78, "Levi's Stadium", '2026-06-29T21:00:00Z', 'ESP'),
+  makeVirtualKnockout(79, 'BMO Field', '2026-06-30T16:00:00Z'),
+  makeVirtualKnockout(80, 'Lumen Field', '2026-06-30T19:00:00Z'),
+  makeVirtualKnockout(81, 'Hard Rock Stadium', '2026-06-30T21:00:00Z'),
+  makeVirtualKnockout(82, 'Mercedes-Benz Stadium', '2026-07-01T16:00:00Z'),
+  makeVirtualKnockout(83, 'Arrowhead Stadium', '2026-07-01T19:00:00Z'),
+  makeVirtualKnockout(84, 'Gillette Stadium', '2026-07-01T21:00:00Z'),
+  makeVirtualKnockout(85, 'BC Place', '2026-07-02T16:00:00Z'),
+  makeVirtualKnockout(86, 'Estadio Akron', '2026-07-02T19:00:00Z'),
+  makeVirtualKnockout(87, 'Lincoln Financial Field', '2026-07-02T21:00:00Z'),
+  makeVirtualKnockout(88, 'Estadio BBVA', '2026-07-03T16:00:00Z'),
+  makeVirtualKnockout(89, 'Estadio Azteca', '2026-07-04T16:00:00Z'),
+  makeVirtualKnockout(90, 'SoFi Stadium', '2026-07-04T19:00:00Z'),
+  makeVirtualKnockout(91, 'NRG Stadium', '2026-07-05T16:00:00Z'),
+  makeVirtualKnockout(92, 'MetLife Stadium', '2026-07-05T19:00:00Z'),
+  makeVirtualKnockout(93, 'AT&T Stadium', '2026-07-06T16:00:00Z'),
+  makeVirtualKnockout(94, "Levi's Stadium", '2026-07-06T19:00:00Z'),
+  makeVirtualKnockout(95, 'BMO Field', '2026-07-07T16:00:00Z'),
+  makeVirtualKnockout(96, 'Lumen Field', '2026-07-07T19:00:00Z'),
+  makeVirtualKnockout(97, 'Estadio Azteca', '2026-07-09T16:00:00Z'),
+  makeVirtualKnockout(98, 'SoFi Stadium', '2026-07-09T19:00:00Z'),
+  makeVirtualKnockout(99, 'NRG Stadium', '2026-07-10T16:00:00Z'),
+  makeVirtualKnockout(100, 'MetLife Stadium', '2026-07-10T19:00:00Z'),
+  makeVirtualKnockout(101, 'AT&T Stadium', '2026-07-14T16:00:00Z'),
+  makeVirtualKnockout(102, 'Mercedes-Benz Stadium', '2026-07-15T16:00:00Z'),
+  makeVirtualKnockout(103, 'MetLife Stadium', '2026-07-19T18:00:00Z'),
+];
+
 /* ─── Matches View ─── */
 function MatchesView({ user }: { user: User }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['A']));
+
+  const allDisplayMatches = useMemo(() => {
+    const virtual = KNOCKOUT_MATCHES.filter(km => !matches.find(m => m.matchNumber === km.matchNumber));
+    return [...matches, ...virtual];
+  }, [matches]);
 
   const fetchMatches = useCallback(async () => {
     const data = await apiFetch(`/api/matches?userId=${user.id}`);
@@ -700,7 +768,7 @@ function MatchesView({ user }: { user: User }) {
     return () => { active = false; clearInterval(iv); };
   }, [user.id]);
 
-  const filteredMatches = matches.filter(m => {
+  const filteredMatches = allDisplayMatches.filter(m => {
     if (filter === 'upcoming') return m.status === 'upcoming';
     if (filter === 'live') return m.status === 'live';
     if (filter === 'finished') return m.status === 'finished';
