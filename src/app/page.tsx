@@ -949,9 +949,27 @@ function MatchesView({ user }: { user: User }) {
               </button>
               {isExpanded && (
                 <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
-                  {dayMatches.map(match => (
-                    <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
-                  ))}
+                  {(() => {
+                    const groupMatches = dayMatches.filter(m => m.groupLetter);
+                    const knockoutMatches = dayMatches.filter(m => !m.groupLetter);
+                    return (
+                      <>
+                        {groupMatches.map(match => (
+                          <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
+                        ))}
+                        {groupMatches.length > 0 && knockoutMatches.length > 0 && (
+                          <div className="flex items-center gap-3 px-4 py-2">
+                            <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />
+                            <span className="text-xs font-bold" style={{ color: 'var(--wc-gold)' }}>🏆 الأدوار الإقصائية</span>
+                            <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />
+                          </div>
+                        )}
+                        {knockoutMatches.map(match => (
+                          <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
+                        ))}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
