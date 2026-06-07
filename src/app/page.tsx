@@ -252,7 +252,7 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
       if (data.error) {
         setError(data.error);
       } else if (data.user) {
-        onLogin(data.user);
+        onLogin({ ...data.user, adminToken: data.adminToken });
       }
     } catch {
       setError('حدث خطأ في الاتصال');
@@ -1415,6 +1415,28 @@ function RulesView() {
 /* ─── Admin Panel ─── */
 function AdminPanel({ adminToken }: { adminToken: string }) {
   const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results' | 'departments' | 'email' | 'sync'>('users');
+  const [localToken, setLocalToken] = useState(adminToken);
+
+  const activeToken = adminToken || localToken;
+
+  if (!activeToken) {
+    return (
+      <div className="max-w-md mx-auto mt-20 p-8 rounded-2xl text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <div className="text-4xl mb-4">🛡️</div>
+        <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--wc-gold)' }}>لوحة التحكم</h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>أدخل رمز الإدارة للوصول</p>
+        <Input type="password" value={localToken} onChange={e => setLocalToken(e.target.value)}
+          className="h-11 mb-3" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+          placeholder="أدخل رمز الإدارة" dir="ltr" />
+        <Button onClick={() => { localStorage.setItem('fifa26_admin_token', localToken); }}
+          disabled={!localToken}
+          className="w-full h-11 font-bold"
+          style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+          دخول
+        </Button>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'users' as const, label: '👥 المستخدمين', icon: Users },
@@ -1448,12 +1470,12 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
         ))}
       </div>
 
-      {adminTab === 'users' && <AdminUsersTab adminToken={adminToken} />}
-      {adminTab === 'matches' && <AdminMatchesTab adminToken={adminToken} />}
-      {adminTab === 'results' && <AdminResultsTab adminToken={adminToken} />}
-      {adminTab === 'departments' && <AdminDepartmentsTab adminToken={adminToken} />}
-      {adminTab === 'email' && <AdminEmailTab adminToken={adminToken} />}
-      {adminTab === 'sync' && <SyncPanel adminToken={adminToken} />}
+      {adminTab === 'users' && <AdminUsersTab adminToken={activeToken} />}
+      {adminTab === 'matches' && <AdminMatchesTab adminToken={activeToken} />}
+      {adminTab === 'results' && <AdminResultsTab adminToken={activeToken} />}
+      {adminTab === 'departments' && <AdminDepartmentsTab adminToken={activeToken} />}
+      {adminTab === 'email' && <AdminEmailTab adminToken={activeToken} />}
+      {adminTab === 'sync' && <SyncPanel adminToken={activeToken} />}
     </div>
   );
 }
@@ -2609,9 +2631,13 @@ export default function Home() {
     });
   }, []);
 
-  const handleLogin = (userData: User) => {
+  const handleLogin = (userData: User & { adminToken?: string }) => {
     setUser(userData);
     localStorage.setItem('fifa26_user', JSON.stringify(userData));
+    if (userData.adminToken) {
+      localStorage.setItem('fifa26_admin_token', userData.adminToken);
+      setAdminToken(userData.adminToken);
+    }
   };
 
   const handleLogout = () => {
@@ -2640,25 +2666,7 @@ export default function Home() {
         {activeTab === 'rules' && <RulesView />}
         {activeTab === 'bracket' && <BracketView userId={user.id} />}
         {activeTab === 'admin' && user.email === 'admin@almarshad.com' && (
-          adminToken ? (
-            <AdminPanel adminToken={adminToken} />
-          ) : (
-            <div className="max-w-md mx-auto mt-20 p-8 rounded-2xl text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-              <div className="text-4xl mb-4">🛡️</div>
-              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--wc-gold)' }}>لوحة التحكم</h3>
-              <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>أدخل رمز الإدارة للوصول</p>
-              <Input type="password" value={adminToken} onChange={e => setAdminToken(e.target.value)}
-                className="h-11 mb-3" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                placeholder="أدخل رمز الإدارة" dir="ltr"
-                onKeyDown={e => { if (e.key === 'Enter' && adminToken) localStorage.setItem('fifa26_admin_token', adminToken); }} />
-              <Button onClick={() => { localStorage.setItem('fifa26_admin_token', adminToken); }}
-                disabled={!adminToken}
-                className="w-full h-11 font-bold"
-                style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
-                دخول
-              </Button>
-            </div>
-          )
+          <AdminPanel adminToken={adminToken} />
         )}
       </main>
       <footer className="mt-auto py-4 text-center text-xs" style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)' }}>

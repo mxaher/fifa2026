@@ -29,6 +29,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "بيانات الدخول غير صحيحة" }, { status: 401 });
     }
 
+    const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -40,6 +42,7 @@ export async function POST(request: Request) {
         banned: user.banned ?? false,
         department: user.department,
       },
+      ...(ADMIN_TOKEN && user.isAdmin ? { adminToken: ADMIN_TOKEN } : {}),
     });
   } catch (error) {
     console.error("Login error:", error);
