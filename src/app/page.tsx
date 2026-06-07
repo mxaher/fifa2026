@@ -1135,9 +1135,6 @@ function RulesView() {
         </ul>
       </div>
 
-      {/* Sync Results Panel */}
-      <SyncPanel />
-
       {/* Tournament Format */}
       <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
         <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--wc-gold)' }}>
@@ -1163,7 +1160,7 @@ function RulesView() {
 
 /* ─── Admin Panel ─── */
 function AdminPanel({ adminToken }: { adminToken: string }) {
-  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results' | 'departments' | 'email'>('users');
+  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results' | 'departments' | 'email' | 'sync'>('users');
 
   const tabs = [
     { id: 'users' as const, label: '👥 المستخدمين', icon: Users },
@@ -1171,6 +1168,7 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
     { id: 'results' as const, label: '📊 النتائج', icon: BarChart3 },
     { id: 'departments' as const, label: '🏢 الأقسام', icon: ScrollText },
     { id: 'email' as const, label: '📧 البريد', icon: ScrollText },
+    { id: 'sync' as const, label: '🔄 المزامنة', icon: ScrollText },
   ];
 
   return (
@@ -1201,6 +1199,7 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
       {adminTab === 'results' && <AdminResultsTab adminToken={adminToken} />}
       {adminTab === 'departments' && <AdminDepartmentsTab adminToken={adminToken} />}
       {adminTab === 'email' && <AdminEmailTab adminToken={adminToken} />}
+      {adminTab === 'sync' && <SyncPanel />}
     </div>
   );
 }
