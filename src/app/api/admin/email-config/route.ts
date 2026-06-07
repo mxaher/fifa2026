@@ -40,6 +40,7 @@ export async function GET(request: Request) {
         fromName: config.fromName,
         recipients: JSON.parse(config.recipients || "[]"),
         autoSendDaily: config.autoSendDaily,
+        notifyOnSyncError: config.notifyOnSyncError ?? false,
         lastSentAt: config.lastSentAt,
         hasApiKey: !!config.apiKey,
       },
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { apiKey, fromEmail, fromName, recipients, autoSendDaily } = body;
+    const { apiKey, fromEmail, fromName, recipients, autoSendDaily, notifyOnSyncError } = body;
 
     if (!fromEmail) {
       return NextResponse.json({ error: "البريد الإلكتروني للمرسل مطلوب" }, { status: 400 });
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
       fromName: fromName || "ملك التوقعات",
       recipients: JSON.stringify(recipients),
       autoSendDaily: autoSendDaily ?? false,
+      notifyOnSyncError: notifyOnSyncError ?? false,
       updatedAt: new Date(),
     };
 
@@ -96,6 +98,7 @@ export async function POST(request: Request) {
         fromName: fromName || "ملك التوقعات",
         recipients: JSON.stringify(recipients),
         autoSendDaily: autoSendDaily ?? false,
+        notifyOnSyncError: notifyOnSyncError ?? false,
       });
     }
 

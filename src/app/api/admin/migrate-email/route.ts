@@ -27,6 +27,7 @@ export async function POST(request: Request) {
         from_name TEXT NOT NULL DEFAULT 'ملك التوقعات',
         recipients TEXT NOT NULL DEFAULT '[]',
         auto_send_daily INTEGER DEFAULT 0,
+        notify_on_sync_error INTEGER DEFAULT 0,
         last_sent_at INTEGER,
         created_at INTEGER NOT NULL DEFAULT (unixepoch()),
         updated_at INTEGER NOT NULL DEFAULT (unixepoch())
@@ -34,6 +35,13 @@ export async function POST(request: Request) {
       results.push("email_config table created/verified");
     } catch (err) {
       results.push(`email_config error: ${String(err)}`);
+    }
+
+    try {
+      await db.run(sql`ALTER TABLE email_config ADD COLUMN notify_on_sync_error INTEGER DEFAULT 0`);
+      results.push("notify_on_sync_error column added/verified");
+    } catch {
+      // Column already exists — ignore
     }
 
     try {

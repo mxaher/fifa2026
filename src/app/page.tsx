@@ -2293,7 +2293,7 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [configForm, setConfigForm] = useState({ apiKey: '', fromEmail: '', fromName: 'ملك التوقعات', recipients: '', autoSendDaily: false });
+  const [configForm, setConfigForm] = useState({ apiKey: '', fromEmail: '', fromName: 'ملك التوقعات', recipients: '', autoSendDaily: false, notifyOnSyncError: false });
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
   useEffect(() => {
@@ -2312,6 +2312,7 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
             fromName: cfgRes.config.fromName || 'ملك التوقعات',
             recipients: (cfgRes.config.recipients || []).join(', '),
             autoSendDaily: cfgRes.config.autoSendDaily || false,
+            notifyOnSyncError: cfgRes.config.notifyOnSyncError || false,
           });
         }
         if (logRes.logs) setLogs(logRes.logs);
@@ -2367,6 +2368,7 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
           fromName: configForm.fromName,
           recipients: configForm.recipients.split(/[,;\n]+/).map((s: string) => s.trim()).filter(Boolean),
           autoSendDaily: configForm.autoSendDaily,
+          notifyOnSyncError: configForm.notifyOnSyncError,
         }),
       });
       if (data.success) {
@@ -2453,6 +2455,12 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
                 onChange={e => setConfigForm({ ...configForm, autoSendDaily: e.target.checked })}
                 className="rounded" />
               <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>إرسال تلقائي يومي</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={configForm.notifyOnSyncError}
+                onChange={e => setConfigForm({ ...configForm, notifyOnSyncError: e.target.checked })}
+                className="rounded" />
+              <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>إرسال تنبيه عبر البريد عند فشل المزامنة</label>
             </div>
           </div>
           <Button onClick={handleSaveConfig}

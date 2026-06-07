@@ -96,6 +96,7 @@ export const emailConfig = sqliteTable("email_config", {
   fromName: text("from_name").notNull().default("ملك التوقعات"),
   recipients: text("recipients").notNull().default("[]"), // JSON array of email strings
   autoSendDaily: integer("auto_send_daily", { mode: "boolean" }).default(false),
+  notifyOnSyncError: integer("notify_on_sync_error", { mode: "boolean" }).default(false),
   lastSentAt: integer("last_sent_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
