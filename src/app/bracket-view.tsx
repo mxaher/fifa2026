@@ -486,7 +486,9 @@ export default function BracketView({ userId }: { userId: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch(`/api/matches?userId=${userId}`).then(r => r.json()).then(data => {
+    let active = true;
+    const fetchData = () => fetch(`/api/matches?userId=${userId}`).then(r => r.json()).then(data => {
+      if (!active) return;
       if (data.matches) {
         setMatches(data.matches);
         const teamMap = new Map<string, TeamInfo>();
@@ -496,8 +498,11 @@ export default function BracketView({ userId }: { userId: string }) {
         });
         setTeams(Array.from(teamMap.values()));
       }
-      setLoading(false);
-    }).catch(() => setLoading(false));
+      if (active) setLoading(false);
+    }).catch(() => { if (active) setLoading(false); });
+    fetchData();
+    const iv = setInterval(fetchData, 30000);
+    return () => { active = false; clearInterval(iv); };
   }, [userId]);
 
   const bracketData = useMemo(() => buildBracketData(matches, teams), [matches, teams]);

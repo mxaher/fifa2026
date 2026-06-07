@@ -379,7 +379,29 @@ export async function syncResults(triggeredBy: string = 'cron'): Promise<SyncRep
     }
   }
 
-  // 4. Write sync log
+  // 5. Check for stale unfinished matches (ended but not updated)
+  try {
+    const allDbMatches = await db.select().from(matches);
+    const allDbTeams = await db.select().from(teams);
+    const teamNameMap = new Map(allDbTeams.map(t => [t.id, t]));
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    const newlyFinalizedIds = new Set(report.results.filter(r => !r.alreadyFinalized).map(r => r.matchId));
+
+    for (const m of allDbMatches) {
+      if (m.status !== 'finished' && m.kickoff < threeHoursAgo && !newlyFinalizedIds.has(m.id)) {
+        const home = teamNameMap.get(m.homeTeamId);
+        const away = teamNameMap.get(m.awayTeamId);
+        const matchLabel = home && away ? `${home.name} vs ${away.name}` : `المباراة ${m.id}`;
+        report.errors.push(
+          `❌ ${matchLabel} انتهت ولكن لم يتم تحديث النتيجة — يرجى إدخالها يدويًا`
+        );
+      }
+    }
+  } catch (staleErr) {
+    console.warn('[sync] Failed to check stale matches:', staleErr);
+  }
+
+  // 6. Write sync log
   await writeSyncLog(report, Date.now() - startTime, triggeredBy);
 
   return report;

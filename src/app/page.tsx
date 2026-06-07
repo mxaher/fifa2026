@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
@@ -1108,15 +1108,19 @@ function PredictionsView({ user }: { user: User }) {
   const [filterMatch, setFilterMatch] = useState('all');
 
   useEffect(() => {
-    (async () => {
-      const data = await apiFetch('/api/predictions');
+    let active = true;
+    const fetchData = () => apiFetch('/api/predictions').then(data => {
+      if (!active) return;
       if (data.predictions) {
         const matches = [...new Map(data.predictions.filter((p: any) => p.match).map((p: any) => [p.match.matchNumber, p.match])).values()]
           .sort((a: any, b: any) => a.matchNumber - b.matchNumber);
         setAllData({ predictions: data.predictions, matches });
       }
-      setLoading(false);
-    })();
+      if (active) setLoading(false);
+    });
+    fetchData();
+    const iv = setInterval(fetchData, 30000);
+    return () => { active = false; clearInterval(iv); };
   }, []);
 
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
@@ -1293,11 +1297,15 @@ function LeaderboardView({ user }: { user: User }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      const data = await apiFetch('/api/leaderboard');
+    let active = true;
+    const fetchData = () => apiFetch('/api/leaderboard').then(data => {
+      if (!active) return;
       if (data.leaderboard) setLeaderboard(data.leaderboard);
-      setLoading(false);
-    })();
+      if (active) setLoading(false);
+    });
+    fetchData();
+    const iv = setInterval(fetchData, 30000);
+    return () => { active = false; clearInterval(iv); };
   }, []);
 
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
@@ -1401,7 +1409,9 @@ function LeaderboardView({ user }: { user: User }) {
 /* ─── Sync Panel (in Rules page) ─── */
 function SyncPanel({ adminToken }: { adminToken: string }) {
   const [syncing, setSyncing] = useState(false);
+  const [autoSync, setAutoSync] = useState(false);
   const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
+  const autoSyncRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -1424,6 +1434,25 @@ function SyncPanel({ adminToken }: { adminToken: string }) {
     setSyncing(false);
   };
 
+  useEffect(() => {
+    if (autoSync) {
+      handleSync();
+      autoSyncRef.current = setInterval(handleSync, 300000);
+    } else {
+      if (autoSyncRef.current) {
+        clearInterval(autoSyncRef.current);
+        autoSyncRef.current = null;
+      }
+    }
+    return () => {
+      if (autoSyncRef.current) {
+        clearInterval(autoSyncRef.current);
+        autoSyncRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSync, adminToken]);
+
   return (
     <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -1435,12 +1464,29 @@ function SyncPanel({ adminToken }: { adminToken: string }) {
             يتم التحديث تلقائياً كل ٥ دقائق — اضغط للتحديث الفوري
           </p>
         </div>
-        <Button onClick={handleSync} disabled={syncing}
-          className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:opacity-90 active:scale-95"
-          style={{ background: 'linear-gradient(135deg, var(--wc-blue), var(--wc-sky))' }}>
-          {syncing ? '⏳ جاري المزامنة...' : '🔄 مزامنة الآن'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>تلقائي</span>
+            <button
+              onClick={() => setAutoSync(!autoSync)}
+              className={`relative w-11 h-6 rounded-full transition-all duration-200 ${autoSync ? 'bg-green-500' : 'bg-gray-600'}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${autoSync ? 'right-0.5' : 'right-5'}`} />
+            </button>
+          </label>
+          <Button onClick={handleSync} disabled={syncing || autoSync}
+            className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all duration-200 hover:opacity-90 active:scale-95"
+            style={{ background: autoSync ? 'var(--text-muted)' : 'linear-gradient(135deg, var(--wc-blue), var(--wc-sky))' }}>
+            {syncing ? '⏳ جاري المزامنة...' : '🔄 مزامنة الآن'}
+          </Button>
+        </div>
       </div>
+
+      {autoSync && (
+        <div className="mt-3 p-2 rounded-lg text-xs text-center" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e' }}>
+          المزامنة التلقائية نشطة — يتم التحديث كل 5 دقائق
+        </div>
+      )}
 
       {syncResult && (
         <div className="mt-4 p-3 rounded-xl text-sm font-medium border"
@@ -2624,6 +2670,15 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
             يتم إرسال الإيميلات عن طريق <strong>Resend.com</strong> أولاً، وفي حال فشلها يتحول تلقائياً إلى <strong>Mailjet</strong> (حتى 200 إيميل/يوم مجاناً).
           </p>
+          <div className="flex items-center gap-2 p-3 rounded-lg" style={{ background: config?.hasApiKey ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${config?.hasApiKey ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+            <span className="text-lg">{config?.hasApiKey ? '✅' : '❌'}</span>
+            <span className="text-sm font-medium" style={{ color: config?.hasApiKey ? '#22c55e' : '#ef4444' }}>
+              حالة البريد: {config?.hasApiKey ? 'نشط' : 'غير نشط'}
+            </span>
+            {!config?.hasApiKey && (
+              <span className="text-xs mr-auto" style={{ color: 'var(--text-muted)' }}>— قم بإضافة مفتاح Resend API للتفعيل</span>
+            )}
+          </div>
           <div className="space-y-3">
             <div>
               <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Resend API Key</label>
