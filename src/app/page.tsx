@@ -68,6 +68,67 @@ interface MatchWithTeams {
   prediction: { homeScore: number; awayScore: number; points: number | null; pointsType: string | null } | null;
 }
 
+type KnockoutRound = 'R32' | 'R16' | 'QF' | 'SF' | 'F';
+
+const ROUND_RANGES: Record<KnockoutRound, [number, number]> = {
+  'R32': [73, 88],
+  'R16': [89, 96],
+  'QF':  [97, 100],
+  'SF':  [101, 102],
+  'F':   [103, 103],
+};
+
+const ROUND_LABEL_AR: Record<KnockoutRound, string> = {
+  'R32': 'دور الـ 32',
+  'R16': 'دور الـ 16',
+  'QF':  'ربع النهائي',
+  'SF':  'نصف النهائي',
+  'F':   'المباراة النهائية',
+};
+
+function getMatchRound(match: MatchWithTeams): KnockoutRound | null {
+  if (match.groupLetter) return null;
+  const n = match.matchNumber;
+  if (n >= 73 && n <= 88) return 'R32';
+  if (n >= 89 && n <= 96) return 'R16';
+  if (n >= 97 && n <= 100) return 'QF';
+  if (n >= 101 && n <= 102) return 'SF';
+  if (n === 103) return 'F';
+  return null;
+}
+
+function isRoundFinished(round: 'group' | KnockoutRound, allMatches: MatchWithTeams[]): boolean {
+  let prevMatches: MatchWithTeams[];
+  if (round === 'group') {
+    prevMatches = allMatches.filter(m => m.groupLetter);
+  } else {
+    const [min, max] = ROUND_RANGES[round];
+    prevMatches = allMatches.filter(m => m.matchNumber >= min && m.matchNumber <= max);
+  }
+  if (prevMatches.length === 0) return false;
+  return prevMatches.every(m => m.status === 'finished' && m.homeScore != null && m.awayScore != null);
+}
+
+function isMatchLocked(match: MatchWithTeams, allMatches: MatchWithTeams[]): boolean {
+  const round = getMatchRound(match);
+  if (!round) return false;
+  if (round === 'R32') return !isRoundFinished('group', allMatches);
+  const order: KnockoutRound[] = ['R32', 'R16', 'QF', 'SF', 'F'];
+  const idx = order.indexOf(round);
+  const prev = order[idx - 1];
+  return !isRoundFinished(prev, allMatches);
+}
+
+function getLockReason(match: MatchWithTeams, allMatches: MatchWithTeams[]): string {
+  const round = getMatchRound(match);
+  if (!round) return '';
+  if (round === 'R32') return 'سيتم فتح التوقعات بعد انتهاء جميع مباريات دور المجموعات';
+  const order: KnockoutRound[] = ['R32', 'R16', 'QF', 'SF', 'F'];
+  const idx = order.indexOf(round);
+  const prev = order[idx - 1];
+  return `سيتم فتح التوقعات بعد انتهاء ${ROUND_LABEL_AR[prev]}`;
+}
+
 interface LeaderboardEntry {
   rank: number;
   id: string;
@@ -545,7 +606,7 @@ function TournamentSchedule({ onMatchClick }: { onMatchClick?: (match: MatchWith
 }
 
 /* ─── Match Schedule Card ─── */
-function MatchScheduleCard({ match, onClick }: { match: MatchWithTeams; onClick: () => void }) {
+function MatchScheduleCard({ match, onClick, locked, lockReason }: { match: MatchWithTeams; onClick: () => void; locked?: boolean; lockReason?: string }) {
   const kickoff = new Date(match.kickoff);
   const time = kickoff.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Riyadh' });
   const isFinished = match.status === 'finished';
@@ -553,8 +614,13 @@ function MatchScheduleCard({ match, onClick }: { match: MatchWithTeams; onClick:
 
   return (
     <button onClick={onClick}
+      title={locked ? lockReason : undefined}
       className="w-full flex items-center gap-3 p-3 transition-all hover:opacity-90 text-right"
-      style={{ borderBottom: '1px solid var(--border-color)' }}>
+      style={{
+        borderBottom: '1px solid var(--border-color)',
+        opacity: locked ? 0.55 : 1,
+        cursor: locked ? 'not-allowed' : 'pointer',
+      }}>
       {/* Time */}
       <div className="text-center flex-shrink-0 w-14">
         <div className="font-bebas text-lg" style={{ color: isLive ? '#F44336' : 'var(--wc-sky)' }}>{time}</div>
@@ -597,6 +663,10 @@ function MatchScheduleCard({ match, onClick }: { match: MatchWithTeams; onClick:
         ) : isFinished ? (
           <div className="px-2 py-1 rounded-full text-xs" style={{ background: 'rgba(100,116,139,0.2)', color: 'var(--text-muted)' }}>
             منتهية
+          </div>
+        ) : locked ? (
+          <div className="px-2 py-1 rounded-full text-xs" style={{ background: 'rgba(100,116,139,0.15)', color: 'var(--text-muted)' }}>
+            🔒 مغلق
           </div>
         ) : (
           <div className="px-2 py-1 rounded-full text-xs" style={{ background: 'rgba(255,215,0,0.15)', color: 'var(--wc-gold)' }}>
@@ -849,11 +919,14 @@ function MatchesView({ user }: { user: User }) {
   });
 
   const handleMatchClick = (match: MatchWithTeams) => {
-    if (match.status === 'upcoming') {
-      setSelectedMatch(match);
-      setPredHome(match.prediction?.homeScore?.toString() || '');
-      setPredAway(match.prediction?.awayScore?.toString() || '');
+    if (match.status !== 'upcoming') return;
+    if (isMatchLocked(match, allDisplayMatches)) {
+      alert(getLockReason(match, allDisplayMatches));
+      return;
     }
+    setSelectedMatch(match);
+    setPredHome(match.prediction?.homeScore?.toString() || '');
+    setPredAway(match.prediction?.awayScore?.toString() || '');
   };
 
   const handlePredSubmit = async () => {
@@ -952,9 +1025,18 @@ function MatchesView({ user }: { user: User }) {
               </button>
               {isExpanded && (
                 <div className="border-t" style={{ borderColor: 'var(--border-color)' }}>
-                  {dayMatches.map(match => (
-                    <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
-                  ))}
+                  {dayMatches.map(match => {
+                    const locked = isMatchLocked(match, allDisplayMatches);
+                    return (
+                      <MatchScheduleCard
+                        key={match.id}
+                        match={match}
+                        onClick={() => handleMatchClick(match)}
+                        locked={locked}
+                        lockReason={locked ? getLockReason(match, allDisplayMatches) : undefined}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>
