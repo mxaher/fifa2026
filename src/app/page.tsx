@@ -942,7 +942,17 @@ function MatchesView({ user }: { user: User }) {
           const d = new Date(m.kickoff).toISOString().split('T')[0];
           return d === today;
         });
-        if (todayMatches.length === 0) return null;
+        if (todayMatches.length === 0) {
+          return (
+            <div className="rounded-xl overflow-hidden mb-6 opacity-60" style={{ background: 'var(--bg-card)', border: '1px dashed var(--border-color)' }}>
+              <div className="p-3 text-center">
+                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  📅 لا توجد مباريات اليوم — أول مباراة في 11 يونيو
+                </span>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="rounded-xl overflow-hidden mb-6" style={{ background: 'var(--bg-card)', border: '2px solid var(--wc-gold)' }}>
             <div className="p-3 text-center" style={{ background: 'rgba(255,215,0,0.12)' }}>
