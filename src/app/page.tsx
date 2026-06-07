@@ -837,7 +837,7 @@ function MatchesView({ user }: { user: User }) {
         return { ...vm, homeScore: dbMatch.homeScore, awayScore: dbMatch.awayScore, status: dbMatch.status };
       }
       return vm;
-    });
+    }).sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime());
     return [...realGroupMatches, ...mergedVirtual];
   }, [matches, virtualMatches]);
 
