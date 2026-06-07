@@ -757,8 +757,10 @@ function MatchesView({ user }: { user: User }) {
       const groupMatches = matches.filter(m => m.groupLetter === groupLetter && m.status === 'finished' && m.homeScore != null && m.awayScore != null);
       let pts = 0, gf = 0, ga = 0, played = 0;
       for (const m of groupMatches) {
-        if (m.homeTeam?.id === teamId) { gf += m.homeScore; ga += m.awayScore; played++; pts += m.homeScore > m.awayScore ? 3 : m.homeScore === m.awayScore ? 1 : 0; }
-        if (m.awayTeam?.id === teamId) { gf += m.awayScore; ga += m.homeScore; played++; pts += m.awayScore > m.homeScore ? 3 : m.awayScore === m.homeScore ? 1 : 0; }
+        const hs = m.homeScore!;
+        const as = m.awayScore!;
+        if (m.homeTeam?.id === teamId) { gf += hs; ga += as; played++; pts += hs > as ? 3 : hs === as ? 1 : 0; }
+        if (m.awayTeam?.id === teamId) { gf += as; ga += hs; played++; pts += as > hs ? 3 : as === hs ? 1 : 0; }
       }
       return { teamId, pts, gd: gf - ga, gf, played };
     }
@@ -804,14 +806,24 @@ function MatchesView({ user }: { user: User }) {
           ...km,
           homeTeam: q1 ? teamInfo(q1) : null,
           awayTeam: q2 ? teamInfo(q2) : null,
-        };
+        } as MatchWithTeams;
       });
     }
 
-    return fillKnockoutTeams().filter(km => !matches.find(m => m.matchNumber === km.matchNumber));
+    return fillKnockoutTeams();
   }, [resultsKey]);
 
-  const allDisplayMatches = useMemo(() => [...matches, ...virtualMatches], [matches, virtualMatches]);
+  const allDisplayMatches = useMemo(() => {
+    const realGroupMatches = matches.filter(m => m.groupLetter !== null);
+    const mergedVirtual = virtualMatches.map(vm => {
+      const dbMatch = matches.find(m => m.matchNumber === vm.matchNumber);
+      if (dbMatch && dbMatch.status === 'finished' && dbMatch.homeScore != null) {
+        return { ...vm, homeScore: dbMatch.homeScore, awayScore: dbMatch.awayScore, status: dbMatch.status };
+      }
+      return vm;
+    });
+    return [...realGroupMatches, ...mergedVirtual];
+  }, [matches, virtualMatches]);
 
   const updatePrediction = useCallback((matchId: string, homeScore: number, awayScore: number) => {
     setMatches(prev => prev.map(m =>
@@ -1036,8 +1048,21 @@ function LeaderboardView({ user }: { user: User }) {
 
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
 
+  const hasAnyPoints = leaderboard.some(e => e.totalPoints > 0);
   const top3 = leaderboard.slice(0, 3);
   const myEntry = leaderboard.find(e => e.id === user.id);
+
+  if (!hasAnyPoints) {
+    return (
+      <div className="text-center py-20">
+        <div className="text-6xl mb-4">🏆</div>
+        <p className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>لا يوجد ترتيب بعد</p>
+        <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
+          سيتم ترتيب المتسابقين فور بدء المباريات وحساب النقاط
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -1120,7 +1145,7 @@ function LeaderboardView({ user }: { user: User }) {
 }
 
 /* ─── Sync Panel (in Rules page) ─── */
-function SyncPanel() {
+function SyncPanel({ adminToken }: { adminToken: string }) {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
 
@@ -1128,7 +1153,7 @@ function SyncPanel() {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const res = await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const res = await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken } });
       const data = await res.json();
       if (data.success) {
         setSyncResult({
@@ -1345,7 +1370,7 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
       {adminTab === 'results' && <AdminResultsTab adminToken={adminToken} />}
       {adminTab === 'departments' && <AdminDepartmentsTab adminToken={adminToken} />}
       {adminTab === 'email' && <AdminEmailTab adminToken={adminToken} />}
-      {adminTab === 'sync' && <SyncPanel />}
+      {adminTab === 'sync' && <SyncPanel adminToken={adminToken} />}
     </div>
   );
 }

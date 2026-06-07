@@ -16,6 +16,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "كلمة المرور يجب أن تكون ٦ أحرف على الأقل" }, { status: 400 });
     }
 
+    if (!email.toLowerCase().endsWith('@almarshad.com')) {
+      return NextResponse.json({ error: "يجب استخدام البريد الإلكتروني الخاص بالشركة (@almarshad.com)" }, { status: 400 });
+    }
+
     const db = getClient();
 
     // Verify department exists
