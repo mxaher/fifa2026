@@ -307,14 +307,15 @@ export async function GET(request: Request) {
         sourceApi: l.sourceApi,
         fetchedMatches: l.fetchedMatches ?? 0,
         newlyFinalized: l.newlyFinalized ?? 0,
-        createdAt: l.createdAt ? new Date(l.createdAt).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }) : "",
+        createdAt: l.createdAt ? new Date(l.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh" }) : "",
       }));
 
-    const dateStr = now.toLocaleDateString("ar-SA", {
+    const dateStr = now.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "Asia/Riyadh",
     });
 
     const html = generateDailySummaryHTML({
@@ -459,14 +460,15 @@ export async function POST(request: Request) {
         sourceApi: l.sourceApi,
         fetchedMatches: l.fetchedMatches ?? 0,
         newlyFinalized: l.newlyFinalized ?? 0,
-        createdAt: l.createdAt ? new Date(l.createdAt).toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" }) : "",
+        createdAt: l.createdAt ? new Date(l.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh" }) : "",
       }));
 
-    const dateStr = now.toLocaleDateString("ar-SA", {
+    const dateStr = now.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "Asia/Riyadh",
     });
 
     const html = generateDailySummaryHTML({

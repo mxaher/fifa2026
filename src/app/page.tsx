@@ -374,9 +374,9 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
                   </div>
                 </div>
                 <div className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-                  {new Date(selectedMatch.kickoff).toLocaleDateString('ar-SA', { weekday: 'long', month: 'long', day: 'numeric' })}
+                  {new Date(selectedMatch.kickoff).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh' })}
                   {' • '}
-                  {new Date(selectedMatch.kickoff).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(selectedMatch.kickoff).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Riyadh' })}
                 </div>
               </div>
 
@@ -488,8 +488,8 @@ function TournamentSchedule({ onMatchClick }: { onMatchClick?: (match: MatchWith
       <div className="space-y-3">
         {sortedDates.map(date => {
           const dateObj = new Date(date + 'T12:00:00');
-          const dayName = dateObj.toLocaleDateString('ar-SA', { weekday: 'long' });
-          const dayNum = dateObj.toLocaleDateString('ar-SA', { month: 'long', day: 'numeric' });
+          const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Asia/Riyadh' });
+          const dayNum = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'Asia/Riyadh' });
           const isExpanded = expandedDates.has(date);
           const dayMatches = matchesByDate.get(date) || [];
           const finishedCount = dayMatches.filter(m => m.status === 'finished').length;
@@ -547,7 +547,7 @@ function TournamentSchedule({ onMatchClick }: { onMatchClick?: (match: MatchWith
 /* ─── Match Schedule Card ─── */
 function MatchScheduleCard({ match, onClick }: { match: MatchWithTeams; onClick: () => void }) {
   const kickoff = new Date(match.kickoff);
-  const time = kickoff.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+  const time = kickoff.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Riyadh' });
   const isFinished = match.status === 'finished';
   const isLive = match.status === 'live';
 
@@ -2495,7 +2495,7 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
           </Button>
           {config?.lastSentAt && (
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              آخر إرسال: {new Date(config.lastSentAt).toLocaleString('ar-SA')}
+              آخر إرسال: {new Date(config.lastSentAt).toLocaleString('en-US', { timeZone: 'Asia/Riyadh' })}
             </p>
           )}
         </div>
@@ -2584,7 +2584,7 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
                   {logs.map((log: any) => (
                     <tr key={log.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                       <td className="px-3 py-2" style={{ color: 'var(--text-secondary)' }}>
-                        {log.createdAt ? new Date(log.createdAt).toLocaleString('ar-SA') : '-'}
+                        {log.createdAt ? new Date(log.createdAt).toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }) : '-'}
                       </td>
                       <td className="px-3 py-2" style={{ color: 'var(--text-primary)' }}>{log.subject}</td>
                       <td className="px-3 py-2 text-center" style={{ color: 'var(--text-primary)' }}>{log.recipientCount}</td>
