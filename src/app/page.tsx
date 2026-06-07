@@ -622,7 +622,7 @@ function Header({ user, activeTab, onTabChange, onLogout }: { user: User; active
       <div className="container mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <span className="text-xl">🏆</span>
+          <img src="/almarshad-logo.png" alt="المرشد القابضة" className="h-7 w-auto" />
           <span className="font-bold text-sm" style={{ color: 'var(--wc-gold)' }}>ملك التوقعات</span>
           <span className="font-bebas text-xs" style={{ color: 'var(--wc-sky)' }}>FIFA 26</span>
         </div>
@@ -1373,7 +1373,7 @@ function RulesView() {
             { icon: '⏰', text: 'يمكنك التوقع على أي مباراة قبل بدايتها فقط — بمجرد بدء المباراة يُغلق التوقع' },
             { icon: '✏️', text: 'يمكنك تعديل توقعك في أي وقت قبل بداية المباراة' },
             { icon: '🏆', text: 'يتصدر لوحة المتصدرين من يجمع أكبر عدد من النقاط' },
-            { icon: '🔄', text: 'يتم تحديث النتائج تلقائياً كل ٥ دقائق أثناء البطولة' },
+            { icon: '🔄', text: 'يتم تحديث النتائج تلقائيا' },
             { icon: '👥', text: 'المسابقة مخصصة لموظفي مجموعة المرشد القابضة فقط' },
             { icon: '⚽', text: 'كأس العالم فيفا ٢٠٢٦ — ٤٨ منتخب في ١٢ مجموعة' },
             { icon: '📊', text: 'الترتيب يحدد بناءً على: النقاط → عدد التوقعات الدقيقة → عدد التوقعات الصحيحة' },

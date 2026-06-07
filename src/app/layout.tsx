@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 export const metadata: Metadata = {
   title: "ملك التوقعات - فيفا٢٦",
   description: "توقعات كأس العالم فيفا ٢٠٢٦ لموظفي مجموعة المرشد القابضة",
+  icons: {
+    icon: "/almarshad-logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -15,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/almarshad-logo.png" type="image/png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
