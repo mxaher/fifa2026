@@ -610,7 +610,7 @@ function Header({ user, activeTab, onTabChange, onLogout }: { user: User; active
   const isAdmin = user.email === 'admin@almarshad.com';
   const tabs = [
     { id: 'matches', label: '⚽ المباريات', icon: Swords },
-    { id: 'predictions', label: '🎯 توقعاتي', icon: Target },
+    { id: 'predictions', label: '🎯 التوقعات', icon: Target },
     { id: 'leaderboard', label: '🏆 المتصدرين', icon: Trophy },
     { id: 'rules', label: '📜 القواعد', icon: ScrollText },
     { id: 'bracket', label: '🏆 السُلّم', icon: GitFork },
