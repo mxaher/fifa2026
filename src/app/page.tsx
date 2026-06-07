@@ -886,7 +886,7 @@ function MatchesView({ user }: { user: User }) {
     try {
       const data = await apiFetch('/api/predictions', {
         method: 'POST',
-        body: JSON.stringify({ matchId: selectedMatch.id, homeScore: parseInt(predHome), awayScore: parseInt(predAway) }),
+        body: JSON.stringify({ userId: user.id, matchId: selectedMatch.id, homeScore: parseInt(predHome), awayScore: parseInt(predAway) }),
       });
       if (data.error) {
         alert(data.error);
