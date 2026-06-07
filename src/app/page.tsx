@@ -1631,7 +1631,7 @@ function RulesView() {
 
 /* ─── Admin Panel ─── */
 function AdminPanel({ adminToken }: { adminToken: string }) {
-  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results' | 'departments' | 'email' | 'sync'>('users');
+  const [adminTab, setAdminTab] = useState<'users' | 'matches' | 'results' | 'departments' | 'email' | 'sync' | 'reset'>('users');
   const [localToken, setLocalToken] = useState(adminToken);
 
   const activeToken = adminToken || localToken;
@@ -1662,6 +1662,7 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
     { id: 'departments' as const, label: '🏢 الأقسام', icon: ScrollText },
     { id: 'email' as const, label: '📧 البريد', icon: ScrollText },
     { id: 'sync' as const, label: '🔄 المزامنة', icon: ScrollText },
+    { id: 'reset' as const, label: '💣 إعادة ضبط', icon: Trash2 },
   ];
 
   return (
@@ -1693,6 +1694,7 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
       {adminTab === 'departments' && <AdminDepartmentsTab adminToken={activeToken} />}
       {adminTab === 'email' && <AdminEmailTab adminToken={activeToken} />}
       {adminTab === 'sync' && <SyncPanel adminToken={activeToken} />}
+      {adminTab === 'reset' && <AdminResetTab adminToken={activeToken} />}
     </div>
   );
 }
@@ -2016,6 +2018,28 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
     } catch { showResult(false, 'خطأ في الاتصال'); }
   };
 
+  const handleVerifyAll = async () => {
+    const unverified = users.filter(u => !u.isAdmin && u.emailVerified === false);
+    if (unverified.length === 0) {
+      showResult(true, 'جميع المستخدمين مؤكدين بالفعل');
+      return;
+    }
+    let done = 0;
+    for (const u of unverified) {
+      try {
+        const res = await fetch('/api/admin/users', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+          body: JSON.stringify({ id: u.id, emailVerified: true }),
+        });
+        const data = await res.json();
+        if (data.success) done++;
+      } catch {}
+    }
+    showResult(true, `تم تأكيد ${done} من ${unverified.length} مستخدم`);
+    fetchUsers();
+  };
+
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
 
   return (
@@ -2031,11 +2055,18 @@ function AdminUsersTab({ adminToken }: { adminToken: string }) {
       <div className="rounded-xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>المستخدمين ({users.length})</h3>
-          <Button onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-            style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
-            <UserPlus className="h-4 w-4" /> إضافة مستخدم
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleVerifyAll}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}>
+              ✅ تأكيد الجميع
+            </Button>
+            <Button onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+              style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
+              <UserPlus className="h-4 w-4" /> إضافة مستخدم
+            </Button>
+          </div>
         </div>
 
         {showAddForm && (
@@ -2847,6 +2878,86 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
               </table>
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Admin Reset Tab ─── */
+function AdminResetTab({ adminToken }: { adminToken: string }) {
+  const [resetting, setResetting] = useState(false);
+  const [confirmStep, setConfirmStep] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleReset = async () => {
+    setResetting(true);
+    setResult(null);
+    try {
+      const res = await fetch('/api/admin/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResult({ success: true, message: data.message || 'تم إعادة ضبط التطبيق بنجاح' });
+        setConfirmStep(false);
+      } else {
+        setResult({ success: false, message: data.error || 'فشلت إعادة الضبط' });
+      }
+    } catch {
+      setResult({ success: false, message: 'خطأ في الاتصال' });
+    }
+    setResetting(false);
+  };
+
+  return (
+    <div className="rounded-xl p-5 space-y-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+      <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--wc-gold)' }}>
+        <span>💣</span> إعادة ضبط التطبيق
+      </h3>
+      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+        سيتم حذف جميع التوقعات وإعادة تعيين نقاط المستخدمين ونتائج المباريات. المباريات والمنتخبات والمستخدمين سيبقون كما هم.
+      </p>
+      <ul className="text-xs space-y-1" style={{ color: 'var(--text-muted)' }}>
+        <li>✅ تبقي المباريات والجدول كما هو</li>
+        <li>✅ تبقي المنتخبات والمستخدمين والأقسام</li>
+        <li>❌ تحذف جميع التوقعات</li>
+        <li>❌ تصفر نقاط جميع المستخدمين</li>
+        <li>❌ ترجع نتائج المباريات إلى فارغة</li>
+      </ul>
+
+      {!confirmStep ? (
+        <Button onClick={() => setConfirmStep(true)}
+          className="h-11 font-bold px-6"
+          style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff' }}>
+          💣 إعادة ضبط التطبيق
+        </Button>
+      ) : (
+        <div className="space-y-3 p-4 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
+          <p className="text-sm font-bold" style={{ color: '#ef4444' }}>⚠️ هل أنت متأكد؟ هذا الإجراء لا يمكن التراجع عنه!</p>
+          <div className="flex gap-2">
+            <Button onClick={handleReset} disabled={resetting}
+              className="h-10 font-bold px-5"
+              style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff' }}>
+              {resetting ? '⏳ جاري...' : 'نعم، إعادة ضبط'}
+            </Button>
+            <Button onClick={() => setConfirmStep(false)} variant="ghost"
+              className="h-10 px-5" style={{ color: 'var(--text-muted)' }}>
+              إلغاء
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {result && (
+        <div className="p-3 rounded-xl text-sm font-medium border"
+          style={{
+            background: result.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+            borderColor: result.success ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)',
+            color: result.success ? '#22c55e' : '#ef4444',
+          }}>
+          {result.message}
         </div>
       )}
     </div>
