@@ -1666,14 +1666,14 @@ function AdminPanel({ adminToken }: { adminToken: string }) {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div className="rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg, rgba(139,0,0,0.3), rgba(10,22,40,0.8), rgba(255,215,0,0.2))', border: '1px solid var(--border-color)' }}>
         <div className="text-4xl mb-2">🛡️</div>
         <h2 className="text-2xl font-black" style={{ color: 'var(--wc-gold)' }}>لوحة التحكم</h2>
       </div>
 
       {/* Admin sub-tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 pb-2">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setAdminTab(tab.id)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all"
