@@ -2091,7 +2091,7 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
           apiKey: configForm.apiKey,
           fromEmail: configForm.fromEmail,
           fromName: configForm.fromName,
-          recipients: configForm.recipients.split(',').map((s: string) => s.trim()).filter(Boolean),
+          recipients: configForm.recipients.split(/[,;\n]+/).map((s: string) => s.trim()).filter(Boolean),
           autoSendDaily: configForm.autoSendDaily,
         }),
       });
@@ -2168,10 +2168,11 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
             </div>
             <div>
-              <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>المستقبلون (مفصولة بفاصلة)</label>
-              <Input value={configForm.recipients} onChange={e => setConfigForm({ ...configForm, recipients: e.target.value })}
-                placeholder="user1@company.com, user2@company.com"
-                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+              <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>المستلمون (بريد واحد أو أكثر — بريد لكل سطر أو مفصولة بفاصلة)</label>
+              <textarea value={configForm.recipients} onChange={e => setConfigForm({ ...configForm, recipients: e.target.value })}
+                placeholder={"user1@company.com\nuser2@company.com"}
+                dir="ltr" rows={4}
+                style={{ width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '0.5rem', padding: '0.5rem', resize: 'vertical' }} />
             </div>
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={configForm.autoSendDaily}
