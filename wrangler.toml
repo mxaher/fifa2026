@@ -24,6 +24,21 @@ database_id = "a1de6e9f-732f-43e3-8882-7502dace5e12"
 [vars]
 NODE_ENV = "production"
 
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
+
 [triggers]
 crons = [
   "*/5 12-23 * 6-7 *",
