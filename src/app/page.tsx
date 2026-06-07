@@ -770,6 +770,8 @@ function MatchesView({ user }: { user: User }) {
       const allStandings: { teamId: string; pts: number; gd: number; gf: number; played: number; group: string }[] = [];
 
       for (const gl of groupLetters) {
+        const groupMatches = matches.filter(m => m.groupLetter === gl && m.status === 'finished' && m.homeScore != null && m.awayScore != null);
+        if (groupMatches.length === 0) continue;
         const groupTeams = [...new Set(matches.filter(m => m.groupLetter === gl).flatMap(m => [m.homeTeam?.id, m.awayTeam?.id]).filter(Boolean))] as string[];
         const standings = groupTeams.map(id => ({ ...computeGroupStanding(id, gl), group: gl }))
           .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
