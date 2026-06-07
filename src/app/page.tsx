@@ -21,9 +21,9 @@ function FlagImg({ id, name, className }: { id?: string; name?: string; classNam
   if (!code) return null;
   const src = code.includes('-')
     ? `https://hatscripts.github.io/circle-flags/flags/${code}.svg`
-    : `https://flagcdn.com/24x18/${code}.png`;
+    : `https://flagcdn.com/${code}.svg`;
   return <img src={src} alt={name || ''} className={`inline-block align-middle ${className || ''}`}
-    style={{ width: 'auto', height: '1.1em', imageRendering: 'crisp-edges' }} />;
+    style={{ width: 'auto', height: '1.1em' }} />;
 }
 
 /* ─── Types ─── */
