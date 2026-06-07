@@ -34,7 +34,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
-    const { id, name, nameAr } = await request.json();
+    const body = await request.json();
+    const name = body?.name;
+    const nameAr = body?.nameAr;
+    const id = body?.id;
+
     if (!name) {
       return NextResponse.json({ error: "اسم القسم مطلوب" }, { status: 400 });
     }
@@ -42,7 +46,6 @@ export async function POST(request: Request) {
     const db = getClient();
     const deptId = id || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-    // Check if ID already exists
     const existing = await db.select().from(schema.departments).where(eq(schema.departments.id, deptId)).limit(1);
     if (existing.length > 0) {
       return NextResponse.json({ error: "معرف القسم موجود بالفعل" }, { status: 409 });

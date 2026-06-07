@@ -6,6 +6,26 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Menu, LogOut, Trophy, Target, Swords, ChevronDown, ChevronUp, X, ScrollText, Shield, Users, BarChart3, UserPlus, Ban, Trash2, Edit, Save, Plus } from 'lucide-react';
 
+const FIFA_TO_ISO: Record<string, string> = {
+  MEX:'mx', ZAF:'za', KOR:'kr', CZE:'cz', CAN:'ca', BIH:'ba', QAT:'qa',
+  CHE:'ch', BRA:'br', MAR:'ma', HAI:'ht', SCO:'gb-sct', USA:'us', PAR:'py',
+  AUS:'au', TUR:'tr', GER:'de', CUW:'cw', CIV:'ci', ECU:'ec', NED:'nl',
+  JPN:'jp', SWE:'se', TUN:'tn', BEL:'be', EGY:'eg', IRN:'ir', NZL:'nz',
+  POR:'pt', CRO:'hr', UZB:'uz', ALG:'dz', FRA:'fr', URU:'uy', PAN:'pa',
+  IRQ:'iq', ARG:'ar', COL:'co', GHA:'gh', JOR:'jo', ESP:'es', COD:'cd',
+  SEN:'sn', NOR:'no', ENG:'gb-eng', KSA:'sa', CPV:'cv', BFA:'bf',
+};
+
+function FlagImg({ id, name, className }: { id?: string; name?: string; className?: string }) {
+  const code = id ? FIFA_TO_ISO[id] : null;
+  if (!code) return null;
+  const src = code.includes('-')
+    ? `https://hatscripts.github.io/circle-flags/flags/${code}.svg`
+    : `https://flagcdn.com/24x18/${code}.png`;
+  return <img src={src} alt={name || ''} className={`inline-block align-middle ${className || ''}`}
+    style={{ width: 'auto', height: '1.1em', imageRendering: 'crisp-edges' }} />;
+}
+
 /* ─── Types ─── */
 interface User {
   id: string;
@@ -110,7 +130,7 @@ function MatchCard({ match, userId, onSaved }: { match: MatchWithTeams; userId: 
       <div className="flex items-center justify-between gap-2">
         {/* Home team */}
         <div className="flex flex-col items-center text-center flex-1 min-w-0">
-          <span className="text-2xl">{match.homeTeam.flag}</span>
+          <FlagImg id={match.homeTeam.id} name={match.homeTeam.name} className="text-2xl" />
           <span className="text-sm font-bold truncate mt-1">{match.homeTeam.nameAr || match.homeTeam.name}</span>
         </div>
 
@@ -147,7 +167,7 @@ function MatchCard({ match, userId, onSaved }: { match: MatchWithTeams; userId: 
 
         {/* Away team */}
         <div className="flex flex-col items-center text-center flex-1 min-w-0">
-          <span className="text-2xl">{match.awayTeam.flag}</span>
+          <FlagImg id={match.awayTeam.id} name={match.awayTeam.name} className="text-2xl" />
           <span className="text-sm font-bold truncate mt-1">{match.awayTeam.nameAr || match.awayTeam.name}</span>
         </div>
       </div>
@@ -322,7 +342,7 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
               <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
                 <div className="flex items-center justify-center gap-4">
                   <div className="text-center">
-                    <div className="text-3xl mb-1">{selectedMatch.homeTeam?.flag}</div>
+                    <div className="text-3xl mb-1"><FlagImg id={selectedMatch.homeTeam?.id} name={selectedMatch.homeTeam?.name} className="text-3xl" /></div>
                     <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{selectedMatch.homeTeam?.nameAr || selectedMatch.homeTeam?.name}</div>
                   </div>
                   <div className="text-center px-3">
@@ -330,7 +350,7 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
                     <div className="font-bebas text-2xl" style={{ color: 'var(--wc-gold)' }}>VS</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl mb-1">{selectedMatch.awayTeam?.flag}</div>
+                    <div className="text-3xl mb-1"><FlagImg id={selectedMatch.awayTeam?.id} name={selectedMatch.awayTeam?.name} className="text-3xl" /></div>
                     <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{selectedMatch.awayTeam?.nameAr || selectedMatch.awayTeam?.name}</div>
                   </div>
                 </div>
@@ -526,7 +546,7 @@ function MatchScheduleCard({ match, onClick }: { match: MatchWithTeams; onClick:
       <div className="flex-1 flex items-center justify-center gap-2">
         <div className="flex items-center gap-1.5 flex-1 justify-end">
           <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{match.homeTeam?.nameAr || match.homeTeam?.name}</span>
-          <span className="text-lg flex-shrink-0">{match.homeTeam?.flag}</span>
+          <FlagImg id={match.homeTeam?.id} name={match.homeTeam?.name} className="text-lg flex-shrink-0" />
         </div>
 
         <div className="flex-shrink-0 text-center px-2">
@@ -544,7 +564,7 @@ function MatchScheduleCard({ match, onClick }: { match: MatchWithTeams; onClick:
         </div>
 
         <div className="flex items-center gap-1.5 flex-1">
-          <span className="text-lg flex-shrink-0">{match.awayTeam?.flag}</span>
+          <FlagImg id={match.awayTeam?.id} name={match.awayTeam?.name} className="text-lg flex-shrink-0" />
           <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{match.awayTeam?.nameAr || match.awayTeam?.name}</span>
         </div>
       </div>
@@ -817,7 +837,7 @@ function PredictionsView({ user }: { user: User }) {
             <div key={p.id} className="rounded-xl p-4 animate-fade-in" style={{ background: 'var(--gradient-card)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{p.match?.homeTeam?.flag}</span>
+                  <FlagImg id={p.match?.homeTeam?.id} name={p.match?.homeTeam?.name} className="text-xl" />
                   <div className="text-center">
                     <div className="font-bebas text-xl">
                       <span style={{ color: 'var(--wc-sky)' }}>{p.homeScore}</span>
@@ -826,7 +846,7 @@ function PredictionsView({ user }: { user: User }) {
                     </div>
                     <div className="text-xs" style={{ color: 'var(--text-muted)' }}>توقعك</div>
                   </div>
-                  <span className="text-xl">{p.match?.awayTeam?.flag}</span>
+                  <FlagImg id={p.match?.awayTeam?.id} name={p.match?.awayTeam?.name} className="text-xl" />
                 </div>
 
                 {p.match?.homeScore !== null && p.match?.awayScore !== null ? (
