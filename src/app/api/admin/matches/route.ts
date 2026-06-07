@@ -108,8 +108,18 @@ export async function PUT(request: Request) {
     if (kickoff !== undefined) updateData.kickoff = new Date(kickoff);
     if (venue !== undefined) updateData.venue = venue;
     if (status !== undefined) updateData.status = status;
-    if (homeScore !== undefined) updateData.homeScore = homeScore;
-    if (awayScore !== undefined) updateData.awayScore = awayScore;
+    if (homeScore !== undefined) {
+      if (typeof homeScore !== "number" || !Number.isInteger(homeScore) || homeScore < 0) {
+        return NextResponse.json({ error: "النتيجة يجب أن تكون رقماً صحيحاً غير سالب" }, { status: 400 });
+      }
+      updateData.homeScore = homeScore;
+    }
+    if (awayScore !== undefined) {
+      if (typeof awayScore !== "number" || !Number.isInteger(awayScore) || awayScore < 0) {
+        return NextResponse.json({ error: "النتيجة يجب أن تكون رقماً صحيحاً غير سالب" }, { status: 400 });
+      }
+      updateData.awayScore = awayScore;
+    }
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: "لا توجد بيانات للتحديث" }, { status: 400 });

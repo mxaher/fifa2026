@@ -12,6 +12,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "جميع الحقول مطلوبة (الاسم، البريد، القسم، كلمة المرور)" }, { status: 400 });
     }
 
+    if (password.length < 6) {
+      return NextResponse.json({ error: "كلمة المرور يجب أن تكون ٦ أحرف على الأقل" }, { status: 400 });
+    }
+
     const db = getClient();
 
     // Verify department exists

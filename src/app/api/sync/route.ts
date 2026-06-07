@@ -42,7 +42,11 @@ export async function POST(request: Request) {
 }
 
 // GET endpoint for cron-triggered sync (can be called by external schedulers)
-export async function GET() {
+export async function GET(request: Request) {
+  if (!verifyAdmin(request)) {
+    return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+  }
+
   try {
     const report = await syncResults('cron');
     return NextResponse.json({

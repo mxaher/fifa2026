@@ -18,8 +18,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "جميع الحقول مطلوبة: matchId, homeScore, awayScore" }, { status: 400 });
     }
 
-    if (typeof homeScore !== "number" || typeof awayScore !== "number") {
-      return NextResponse.json({ error: "النتيجة يجب أن تكون أرقام" }, { status: 400 });
+    if (typeof homeScore !== "number" || typeof awayScore !== "number" || !Number.isInteger(homeScore) || !Number.isInteger(awayScore) || homeScore < 0 || awayScore < 0) {
+      return NextResponse.json({ error: "النتيجة يجب أن تكون أرقام صحيحة غير سالبة" }, { status: 400 });
     }
 
     const db = getClient();

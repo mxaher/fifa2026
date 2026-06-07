@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const user = users[0];
 
     if (user.banned) {
-      return NextResponse.json({ error: "تم حظر حسابك. تواصل مع الإدارة" }, { status: 403 });
+      return NextResponse.json({ error: "بيانات الدخول غير صحيحة" }, { status: 401 });
     }
 
     const valid = await verifyPassword(password, user.passwordHash, user.salt);

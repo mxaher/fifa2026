@@ -60,6 +60,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "لا يمكن التوقع على مباراة بدأت بالفعل" }, { status: 400 });
     }
 
+    if (typeof homeScore !== "number" || typeof awayScore !== "number" || homeScore < 0 || awayScore < 0 || !Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
+      return NextResponse.json({ error: "النتيجة يجب أن تكون أرقام صحيحة غير سالبة" }, { status: 400 });
+    }
+
     // Check if prediction already exists
     const existing = await db.select().from(schema.predictions)
       .where(and(eq(schema.predictions.userId, userId), eq(schema.predictions.matchId, matchId)))

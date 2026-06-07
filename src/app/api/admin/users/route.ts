@@ -61,6 +61,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "الاسم والبريد وكلمة المرور مطلوبة" }, { status: 400 });
     }
 
+    if (password.length < 6) {
+      return NextResponse.json({ error: "كلمة المرور يجب أن تكون ٦ أحرف على الأقل" }, { status: 400 });
+    }
+
     const db = getClient();
 
     const existing = await db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1);
@@ -111,6 +115,9 @@ export async function PUT(request: Request) {
     if (department !== undefined) updateData.department = department;
 
     if (password) {
+      if (password.length < 6) {
+        return NextResponse.json({ error: "كلمة المرور يجب أن تكون ٦ أحرف على الأقل" }, { status: 400 });
+      }
       const { hash, salt } = await hashPassword(password);
       updateData.passwordHash = hash;
       updateData.salt = salt;
