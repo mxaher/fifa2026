@@ -62,3 +62,22 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Wrangler local dev cache
+.wrangler/
+
+# AI agent working context
+agent-ctx/
+
+# Example code (not part of the application)
+examples/
+
+# Local server deployment scripts (not used — deploying on Cloudflare)
+.zscripts/
+Caddyfile
+
+# Local dev database
+db/custom.db
+
+# npm lock file (using bun.lock)
+package-lock.json
