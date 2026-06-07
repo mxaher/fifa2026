@@ -54,18 +54,21 @@ export async function POST(request: Request) {
       totalPoints: 0,
       isAdmin: false,
       banned: false,
-      emailVerified: true,
+      emailVerified: false,
+      verificationToken,
       department,
     }).returning();
 
     const user = result[0];
 
-    // Try to send welcome email (purely informational, no verification needed)
+    // Try to send verification email
+    let emailSent = false;
     try {
       const configs = await db.select().from(schema.emailConfig).limit(1);
       const config = configs[0];
 
       if (config?.fromEmail && (config?.apiKey || (config?.mailjetApiKey && config?.mailjetSecretKey))) {
+        const verifyLink = BASE_URL + "/api/auth/verify?token=" + verificationToken;
         const html =
           '<div dir="rtl" style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#0F2137;color:#e0e0e0;border-radius:12px;">' +
           '<div style="text-align:center;padding:20px 0;">' +
@@ -74,13 +77,15 @@ export async function POST(request: Request) {
           '<h2 style="color:#4FC3F7;font-size:16px;">FIFA World Cup 2026™</h2></div>' +
           '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:20px;margin:15px 0;">' +
           '<p style="margin:0 0 10px 0;">مرحباً ' + name + '،</p>' +
-          '<p style="margin:0 0 15px 0;">تم إنشاء حسابك بنجاح في ملك التوقعات! يمكنك الآن تسجيل الدخول والبدء في التوقعات.</p>' +
+          '<p style="margin:0 0 15px 0;">شكراً لتسجيلك في ملك التوقعات. يرجى تأكيد بريدك الإلكتروني بالنقر على الرابط أدناه:</p>' +
           '<div style="text-align:center;margin:20px 0;">' +
-          '<a href="' + BASE_URL + '" style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#FFD700,#FFA000);border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;"><span style="color:#000000;">الدخول إلى التطبيق</span></a></div></div>' +
+          '<a href="' + verifyLink + '" style="color:#4FC3F7;font-weight:bold;font-size:16px;">تأكيد البريد الإلكتروني</a></div>' +
+          '<p style="font-size:13px;color:#888;">إذا لم يعمل الرابط، يمكنك نسخ الرابط التالي ولصقه في المتصفح:</p>' +
+          '<p style="font-size:12px;color:#aaa;word-break:break-all;background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;direction:ltr;text-align:left;">' + verifyLink + '</p></div>' +
           '<div style="text-align:center;padding-top:15px;border-top:1px solid rgba(255,255,255,0.1);margin-top:15px;">' +
           '<p style="font-size:12px;color:#666;">ملك التوقعات - فيفا ٢٠٢٦ | مجموعة المرشد القابضة</p></div></div>';
 
-        await sendEmail(
+        const emailResult = await sendEmail(
           {
             apiKey: config.apiKey || "",
             mailjetApiKey: config.mailjetApiKey || undefined,
@@ -89,13 +94,28 @@ export async function POST(request: Request) {
             fromName: config.fromName || "ملك التوقعات",
             recipients: [email],
           },
-          "مرحباً بك في ملك التوقعات - فيفا ٢٠٢٦",
+          "تأكيد البريد الإلكتروني - ملك التوقعات فيفا ٢٠٢٦",
           html
         );
+        emailSent = emailResult.success;
       }
     } catch {
-      // Welcome email is best-effort, never block registration
+      // Email send failed silently
     }
+
+    if (emailSent) {
+      return NextResponse.json({
+        success: true,
+        message: "تم إنشاء الحساب بنجاح. يرجى التحقق من بريدك الإلكتروني لتأكيد الحساب.",
+      });
+    }
+
+    // No email configured or send failed — auto-verify the user as fallback
+    try {
+      await db.update(schema.users)
+        .set({ emailVerified: true, verificationToken: null, updatedAt: new Date() })
+        .where(eq(schema.users.id, user.id));
+    } catch {}
 
     return NextResponse.json({
       user: {

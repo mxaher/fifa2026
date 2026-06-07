@@ -36,13 +36,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "بيانات الدخول غير صحيحة" }, { status: 401 });
     }
 
-    // Auto-verify if email not confirmed (no verification required for company domain)
+    // Check email verification (skip for admins)
     if (!user.isAdmin && !user.emailVerified) {
-      try {
-        await db.update(schema.users)
-          .set({ emailVerified: true, verificationToken: null, updatedAt: new Date() })
-          .where(eq(schema.users.id, user.id));
-      } catch {}
+      // Auto-verify users who existed before the email verification feature
+      // (they have no verificationToken since they were never issued one)
+      if (!user.verificationToken) {
+        try {
+          await db.update(schema.users)
+            .set({ emailVerified: true, updatedAt: new Date() })
+            .where(eq(schema.users.id, user.id));
+        } catch {}
+      } else {
+        return NextResponse.json({
+          error: "البريد الإلكتروني غير مؤكد. يرجى التحقق من بريدك الإلكتروني وتأكيد الحساب.",
+          needsVerification: true,
+        }, { status: 403 });
+      }
     }
 
     const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
