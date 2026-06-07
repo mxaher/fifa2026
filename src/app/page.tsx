@@ -279,6 +279,9 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
         {/* Login Form - Right Side (RTL) */}
         <div className="w-full lg:w-96 lg:order-1 flex-shrink-0">
           <div className="rounded-2xl p-6 sticky top-4" style={{ background: 'rgba(10,22,40,0.85)', backdropFilter: 'blur(20px)', border: '1px solid var(--border-color)' }}>
+            <div className="flex justify-center mb-4">
+              <img src="/almarshad-logo.png" alt="المرشد القابضة" className="h-10 w-auto opacity-90" />
+            </div>
             <h2 className="text-xl font-bold text-center mb-4" style={{ color: 'var(--wc-gold)' }}>
               {isRegister ? 'إنشاء حساب جديد' : 'تسجيل الدخول'}
             </h2>
