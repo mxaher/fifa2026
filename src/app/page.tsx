@@ -102,7 +102,7 @@ function Countdown({ kickoff }: { kickoff: string }) {
 }
 
 /* ─── Match Card ─── */
-function MatchCard({ match, userId, onSaved }: { match: MatchWithTeams; userId: string; onSaved: () => void }) {
+function MatchCard({ match, userId, onSaved }: { match: MatchWithTeams; userId: string; onSaved: (matchId: string, homeScore: number, awayScore: number) => void }) {
   const [homeScore, setHomeScore] = useState<string>(match.prediction?.homeScore?.toString() ?? '');
   const [awayScore, setAwayScore] = useState<string>(match.prediction?.awayScore?.toString() ?? '');
   const [saving, setSaving] = useState(false);
@@ -112,12 +112,14 @@ function MatchCard({ match, userId, onSaved }: { match: MatchWithTeams; userId: 
   const handleSave = async () => {
     if (!homeScore || !awayScore) return;
     setSaving(true);
+    const hs = parseInt(homeScore);
+    const as = parseInt(awayScore);
     await apiFetch('/api/predictions', {
       method: 'POST',
-      body: JSON.stringify({ userId, matchId: match.id, homeScore: parseInt(homeScore), awayScore: parseInt(awayScore) }),
+      body: JSON.stringify({ userId, matchId: match.id, homeScore: hs, awayScore: as }),
     });
     setSaving(false);
-    onSaved();
+    onSaved(match.id, hs, as);
   };
 
   const pointsColor = match.prediction?.pointsType === 'exact' ? 'var(--pts-exact)'
@@ -746,7 +748,11 @@ function MatchesView({ user }: { user: User }) {
   const [filter, setFilter] = useState('all');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['A']));
 
-  const allDisplayMatches = useMemo(() => {
+  const resultsKey = useMemo(() =>
+    matches.map(m => `${m.id}:${m.homeScore}:${m.awayScore}:${m.status}`).join('|'),
+  [matches]);
+
+  const virtualMatches = useMemo(() => {
     function computeGroupStanding(teamId: string, groupLetter: string) {
       const groupMatches = matches.filter(m => m.groupLetter === groupLetter && m.status === 'finished' && m.homeScore != null && m.awayScore != null);
       let pts = 0, gf = 0, ga = 0, played = 0;
@@ -766,7 +772,7 @@ function MatchesView({ user }: { user: User }) {
         const standings = groupTeams.map(id => ({ ...computeGroupStanding(id, gl), group: gl }))
           .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
         standings.forEach((s, i) => {
-          if (i < 2) allStandings.push(s); // top 2
+          if (i < 2) allStandings.push(s);
         });
       }
 
@@ -790,7 +796,7 @@ function MatchesView({ user }: { user: User }) {
       ];
 
       return KNOCKOUT_MATCHES.map((km, i) => {
-        if (i >= 16) return km; // R16+ stays TBD until R32 results
+        if (i >= 16) return km;
         const [pos, g1, g2] = R32_PAIRINGS[i] || [0, 'A', 'B'];
         const q1 = (advanced.get(g1) || [])[pos];
         const q2 = (advanced.get(g2) || [])[pos === 0 ? 1 : 0];
@@ -802,9 +808,18 @@ function MatchesView({ user }: { user: User }) {
       });
     }
 
-    const virtual = fillKnockoutTeams().filter(km => !matches.find(m => m.matchNumber === km.matchNumber));
-    return [...matches, ...virtual];
-  }, [matches]);
+    return fillKnockoutTeams().filter(km => !matches.find(m => m.matchNumber === km.matchNumber));
+  }, [resultsKey]);
+
+  const allDisplayMatches = useMemo(() => [...matches, ...virtualMatches], [matches, virtualMatches]);
+
+  const updatePrediction = useCallback((matchId: string, homeScore: number, awayScore: number) => {
+    setMatches(prev => prev.map(m =>
+      m.id === matchId
+        ? { ...m, prediction: { homeScore, awayScore, points: null, pointsType: null } }
+        : m
+    ));
+  }, []);
 
   const fetchMatches = useCallback(async () => {
     const data = await apiFetch(`/api/matches?userId=${user.id}`);
@@ -882,7 +897,7 @@ function MatchesView({ user }: { user: User }) {
           {expandedGroups.has(group) && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {groupMatches.map(match => (
-                <MatchCard key={match.id} match={match} userId={user.id} onSaved={fetchMatches} />
+                <MatchCard key={match.id} match={match} userId={user.id} onSaved={updatePrediction} />
               ))}
             </div>
           )}
