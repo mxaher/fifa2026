@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
     if (!token) {
       return new Response(
-        `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>تأكيد البريد الإلكتروني</title><style>body{margin:0;padding:0;background:#0A1628;color:#e0e0e0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}div{text-align:center;padding:40px;background:#0F2137;border-radius:16px;max-width:400px}h1{color:#ef4444}</style></head><body><div><span style="font-size:64px">❌</span><h1>رابط التحقق غير صالح</h1><p style="color:#888;">الرجاء التأكد من الرابط أو طلب رابط تحقق جديد</p></div></body></html>`,
+        `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>تأكيد البريد الإلكتروني</title><style>body{margin:0;padding:0;background:#0A1628;color:#e0e0e0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}div{text-align:center;padding:40px;background:#0F2137;border-radius:16px;max-width:400px}h1{color:#ef4444}</style></head><body><div><span style="font-size:64px">❌</span><h1>رابط التحقق غير صالح</h1><p style="color:#888;">الرجاء التأكد من الرابط</p></div></body></html>`,
         { status: 400, headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
@@ -22,8 +22,8 @@ export async function GET(request: Request) {
 
     if (users.length === 0) {
       return new Response(
-        `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>تأكيد البريد الإلكتروني</title><style>body{margin:0;padding:0;background:#0A1628;color:#e0e0e0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}div{text-align:center;padding:40px;background:#0F2137;border-radius:16px;max-width:400px}h1{color:#ef4444}</style></head><body><div><span style="font-size:64px">❌</span><h1>رابط التحقق غير صالح أو منتهي</h1><p style="color:#888;">يمكنك طلب رابط تحقق جديد من خلال تسجيل الدخول</p></div></body></html>`,
-        { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } }
+        `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>تأكيد البريد الإلكتروني</title><style>body{margin:0;padding:0;background:#0A1628;color:#e0e0e0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}div{text-align:center;padding:40px;background:#0F2137;border-radius:16px;max-width:400px}h1{color:#22c55e}</style></head><body><div><span style="font-size:64px">✅</span><h1>بريدك الإلكتروني مؤكد بالفعل</h1><p style="color:#888;">إذا كنت تستطيع تسجيل الدخول، فهذا يعني أن حسابك نشط</p><a href="/" style="display:inline-block;margin-top:20px;padding:12px 32px;background:linear-gradient(135deg,#FFD700,#FFA000);border-radius:8px;text-decoration:none;font-weight:bold;"><span style="color:#000000;">تسجيل الدخول</span></a></div></body></html>`,
+        { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
 
