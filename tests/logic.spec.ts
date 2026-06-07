@@ -162,11 +162,19 @@ test.describe('🧮 E2E Logic — Scoring via API', () => {
     const e2eEmail = `e2e-test-${Date.now()}@almarshad.com`;
     const e2ePassword = 'E2eTestPass123!';
 
-    // Register a non-admin user
-    const regRes = await request.post('/api/auth/register', {
-      data: { name: 'E2E Test User', email: e2eEmail, password: e2ePassword, department: 'it' },
+    // Create a verified non-admin user via admin API (bypasses email verification)
+    const adminToken = process.env.ADMIN_TOKEN;
+    const regRes = await request.post('/api/admin/users', {
+      headers: adminToken ? { 'X-Admin-Token': adminToken } : {},
+      data: { name: 'E2E Test User', email: e2eEmail, password: e2ePassword },
     });
-    expect(regRes.status()).toBe(200);
+    // If admin token is not available, register without verification (test-only fallback)
+    if (regRes.status() !== 200) {
+      const fallbackRes = await request.post('/api/auth/register', {
+        data: { name: 'E2E Test User', email: e2eEmail, password: e2ePassword, department: 'it' },
+      });
+      expect(fallbackRes.status()).toBe(200);
+    }
 
     // Login via page
     await page.goto('/');

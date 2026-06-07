@@ -11,6 +11,8 @@ export const users = sqliteTable("users", {
   totalPoints: integer("total_points").default(0),
   isAdmin: integer("is_admin", { mode: "boolean" }).default(false),
   banned: integer("banned", { mode: "boolean" }).default(false),
+  emailVerified: integer("email_verified", { mode: "boolean" }).default(false),
+  verificationToken: text("verification_token"),
   department: text("department"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
@@ -92,6 +94,8 @@ export const syncLog = sqliteTable("sync_log", {
 export const emailConfig = sqliteTable("email_config", {
   id: text("id").primaryKey().default("default"),
   apiKey: text("api_key").notNull().default(""),
+  mailjetApiKey: text("mailjet_api_key").default(""),
+  mailjetSecretKey: text("mailjet_secret_key").default(""),
   fromEmail: text("from_email").notNull().default(""),
   fromName: text("from_name").notNull().default("ملك التوقعات"),
   recipients: text("recipients").notNull().default("[]"), // JSON array of email strings

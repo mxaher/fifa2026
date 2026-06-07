@@ -45,6 +45,20 @@ export async function POST(request: Request) {
     }
 
     try {
+      await db.run(sql`ALTER TABLE email_config ADD COLUMN mailjet_api_key TEXT DEFAULT ''`);
+      results.push("mailjet_api_key column added/verified");
+    } catch {
+      // Column already exists — ignore
+    }
+
+    try {
+      await db.run(sql`ALTER TABLE email_config ADD COLUMN mailjet_secret_key TEXT DEFAULT ''`);
+      results.push("mailjet_secret_key column added/verified");
+    } catch {
+      // Column already exists — ignore
+    }
+
+    try {
       await db.run(sql`CREATE TABLE IF NOT EXISTS email_log (
         id TEXT PRIMARY KEY,
         recipient_count INTEGER NOT NULL,
@@ -58,6 +72,28 @@ export async function POST(request: Request) {
       results.push("email_log table created/verified");
     } catch (err) {
       results.push(`email_log error: ${String(err)}`);
+    }
+
+    try {
+      await db.run(sql`ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0`);
+      results.push("email_verified column added/verified");
+    } catch {
+      // Column already exists — ignore
+    }
+
+    try {
+      await db.run(sql`ALTER TABLE users ADD COLUMN verification_token TEXT`);
+      results.push("verification_token column added/verified");
+    } catch {
+      // Column already exists — ignore
+    }
+
+    // Mark existing users as verified (they registered before this feature)
+    try {
+      await db.run(sql`UPDATE users SET email_verified = 1 WHERE email_verified IS NULL OR email_verified = 0`);
+      results.push("existing users marked as verified");
+    } catch (err) {
+      results.push(`mark existing users error: ${String(err)}`);
     }
 
     return NextResponse.json({ success: true, results });

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getClient, schema } from "@/lib/db/index";
 import { hashPassword } from "@/lib/auth";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, isNotNull, sql } from "drizzle-orm";
 
 function verifyAdmin(request: Request): string | null {
   const token = request.headers.get("X-Admin-Token");
@@ -37,6 +37,7 @@ export async function GET(request: Request) {
       totalPoints: u.totalPoints ?? 0,
       isAdmin: u.isAdmin ?? false,
       banned: u.banned ?? false,
+      emailVerified: u.emailVerified ?? false,
       department: u.department,
       predictionCount: predMap.get(u.id) ?? 0,
       createdAt: u.createdAt,
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
       totalPoints: 0,
       isAdmin: isAdmin ?? false,
       banned: false,
+      emailVerified: true,
     }).returning();
 
     return NextResponse.json({ user: result[0] });
@@ -152,10 +154,38 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "لا يمكن حذف حساب المشرف" }, { status: 400 });
     }
 
+    // Find matches where this user had scored predictions (before deleting)
+    const scoredPreds = await db.select({ matchId: schema.predictions.matchId })
+      .from(schema.predictions)
+      .where(and(
+        eq(schema.predictions.userId, id),
+        isNotNull(schema.predictions.points)
+      ));
+    const affectedMatchIds = [...new Set(scoredPreds.map(p => p.matchId))];
+
     // Delete user's predictions first
     await db.delete(schema.predictions).where(eq(schema.predictions.userId, id));
     // Delete user
     await db.delete(schema.users).where(eq(schema.users.id, id));
+
+    // Recalculate totalPoints for remaining users on affected matches
+    for (const matchId of affectedMatchIds) {
+      const matchPreds = await db.select()
+        .from(schema.predictions)
+        .where(eq(schema.predictions.matchId, matchId));
+      const remainingUserIds = [...new Set(matchPreds.map(p => p.userId))];
+      for (const uid of remainingUserIds) {
+        const userPreds = await db.select()
+          .from(schema.predictions)
+          .where(eq(schema.predictions.userId, uid));
+        const total = userPreds
+          .filter(p => p.points !== null)
+          .reduce((sum, p) => sum + (p.points ?? 0), 0);
+        await db.update(schema.users)
+          .set({ totalPoints: total })
+          .where(eq(schema.users.id, uid));
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

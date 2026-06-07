@@ -72,9 +72,15 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (existing.length > 0) {
-      // Update existing prediction
+      // Update existing prediction — reset points if the match was re-opened
       await db.update(schema.predictions)
-        .set({ homeScore, awayScore, updatedAt: new Date() })
+        .set({
+          homeScore,
+          awayScore,
+          points: existing[0].points !== null ? null : undefined,
+          pointsType: existing[0].pointsType !== null ? null : undefined,
+          updatedAt: new Date(),
+        })
         .where(eq(schema.predictions.id, existing[0].id));
 
       return NextResponse.json({ prediction: { ...existing[0], homeScore, awayScore } });

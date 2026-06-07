@@ -230,6 +230,7 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
   const [loading, setLoading] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<MatchWithTeams | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   useEffect(() => {
     if (isRegister) {
@@ -250,7 +251,15 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
       const data = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
 
       if (data.error) {
-        setError(data.error);
+        if (data.needsVerification) {
+          setError(data.error);
+          setRegistered(true);
+        } else {
+          setError(data.error);
+        }
+      } else if (data.success && data.message) {
+        setRegistered(true);
+        setError('');
       } else if (data.user) {
         onLogin({ ...data.user, adminToken: data.adminToken });
       }
@@ -286,12 +295,19 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
               {isRegister ? 'إنشاء حساب جديد' : 'تسجيل الدخول'}
             </h2>
 
+            {registered && !error && (
+              <div className="mb-4 p-4 rounded-lg text-sm text-center" style={{ background: 'rgba(46,125,50,0.15)', color: '#4CAF50', border: '1px solid rgba(46,125,50,0.3)' }}>
+                ✅ تم إنشاء الحساب بنجاح.<br />يرجى التحقق من بريدك الإلكتروني وتأكيد الحساب.
+              </div>
+            )}
+
             {error && (
               <div className="mb-4 p-3 rounded-lg text-sm text-center" style={{ background: 'rgba(244,67,54,0.15)', color: '#F44336', border: '1px solid rgba(244,67,54,0.3)' }}>
                 {error}
               </div>
             )}
 
+            {(!registered || error) && (
             <form onSubmit={handleSubmit} className="space-y-3">
               {isRegister && (
                 <div>
@@ -331,12 +347,20 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
                 {loading ? '...' : isRegister ? 'إنشاء حساب' : 'تسجيل الدخول'}
               </Button>
             </form>
+            )}
 
             <div className="text-center mt-4">
-              <button onClick={() => { setIsRegister(!isRegister); setError(''); }}
-                className="text-sm underline" style={{ color: 'var(--wc-sky)' }}>
-                {isRegister ? 'لديك حساب؟ سجّل الدخول' : 'ليس لديك حساب؟ سجّل الآن'}
-              </button>
+              {registered && !error ? (
+                <button onClick={() => { setIsRegister(false); setRegistered(false); setError(''); }}
+                  className="text-sm underline" style={{ color: 'var(--wc-sky)' }}>
+                  لديك حساب؟ سجّل الدخول
+                </button>
+              ) : (
+                <button onClick={() => { setIsRegister(!isRegister); setRegistered(false); setError(''); }}
+                  className="text-sm underline" style={{ color: 'var(--wc-sky)' }}>
+                  {isRegister ? 'لديك حساب؟ سجّل الدخول' : 'ليس لديك حساب؟ سجّل الآن'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -610,7 +634,7 @@ function MatchScheduleCard({ match, onClick }: { match: MatchWithTeams; onClick:
 
 /* ─── Header ─── */
 function Header({ user, activeTab, onTabChange, onLogout }: { user: User; activeTab: string; onTabChange: (t: string) => void; onLogout: () => void }) {
-  const isAdmin = user.email === 'admin@almarshad.com';
+  const isAdmin = user.isAdmin === true;
   const tabs = [
     { id: 'matches', label: '⚽ المباريات', icon: Swords },
     { id: 'predictions', label: '🎯 التوقعات', icon: Target },
@@ -2407,7 +2431,7 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [configForm, setConfigForm] = useState({ apiKey: '', fromEmail: '', fromName: 'ملك التوقعات', recipients: '', autoSendDaily: false, notifyOnSyncError: false });
+  const [configForm, setConfigForm] = useState({ apiKey: '', mailjetApiKey: '', mailjetSecretKey: '', fromEmail: '', fromName: 'ملك التوقعات', recipients: '', autoSendDaily: false, notifyOnSyncError: false });
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
   useEffect(() => {
@@ -2422,6 +2446,8 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
           setConfig(cfgRes.config);
           setConfigForm({
             apiKey: cfgRes.config.apiKey || '',
+            mailjetApiKey: cfgRes.config.mailjetApiKey || '',
+            mailjetSecretKey: cfgRes.config.mailjetSecretKey || '',
             fromEmail: cfgRes.config.fromEmail || '',
             fromName: cfgRes.config.fromName || 'ملك التوقعات',
             recipients: (cfgRes.config.recipients || []).join(', '),
@@ -2478,6 +2504,8 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
         headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
         body: JSON.stringify({
           apiKey: configForm.apiKey,
+          mailjetApiKey: configForm.mailjetApiKey,
+          mailjetSecretKey: configForm.mailjetSecretKey,
           fromEmail: configForm.fromEmail,
           fromName: configForm.fromName,
           recipients: configForm.recipients.split(/[,;\n]+/).map((s: string) => s.trim()).filter(Boolean),
@@ -2487,7 +2515,7 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
       });
       if (data.success) {
         setMessage({ type: 'success', text: 'تم حفظ الإعدادات' });
-        setConfig({ ...config, hasApiKey: !!configForm.apiKey });
+        setConfig({ ...config, hasApiKey: !!configForm.apiKey, hasMailjet: !!(configForm.mailjetApiKey && configForm.mailjetSecretKey) });
       } else {
         setMessage({ type: 'error', text: data.error || 'فشل الحفظ' });
       }
@@ -2536,13 +2564,28 @@ function AdminEmailTab({ adminToken }: { adminToken: string }) {
         <div className="rounded-xl p-5 space-y-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
           <h3 className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>إعدادات البريد الإلكتروني</h3>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            استخدم <a href="https://resend.com" target="_blank" rel="noopener" className="underline" style={{ color: 'var(--wc-sky)' }}>Resend.com</a> للحصول على مفتاح API مجاني (50,000 إيميل/شهر)
+            يتم إرسال الإيميلات عن طريق <strong>Resend.com</strong> أولاً، وفي حال فشلها يتحول تلقائياً إلى <strong>Mailjet</strong> (حتى 200 إيميل/يوم مجاناً).
           </p>
           <div className="space-y-3">
             <div>
               <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Resend API Key</label>
               <Input type="password" value={configForm.apiKey} onChange={e => setConfigForm({ ...configForm, apiKey: e.target.value })}
                 placeholder="re_xxxxxxxxxx" dir="ltr"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+            </div>
+            <div className="pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
+              <p className="text-xs font-bold mb-2" style={{ color: 'var(--wc-sky)' }}>🔄 Mailjet (احتياطي)</p>
+            </div>
+            <div>
+              <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Mailjet API Key</label>
+              <Input type="password" value={configForm.mailjetApiKey} onChange={e => setConfigForm({ ...configForm, mailjetApiKey: e.target.value })}
+                placeholder="mjapi_xxx" dir="ltr"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
+            </div>
+            <div>
+              <label className="block text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Mailjet Secret Key</label>
+              <Input type="password" value={configForm.mailjetSecretKey} onChange={e => setConfigForm({ ...configForm, mailjetSecretKey: e.target.value })}
+                placeholder="mjsec_xxx" dir="ltr"
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} />
             </div>
             <div>
@@ -2754,7 +2797,7 @@ export default function Home() {
         {activeTab === 'leaderboard' && <LeaderboardView user={user} />}
         {activeTab === 'rules' && <RulesView />}
         {activeTab === 'bracket' && <BracketView userId={user.id} />}
-        {activeTab === 'admin' && user.email === 'admin@almarshad.com' && (
+        {activeTab === 'admin' && user.isAdmin === true && (
           <AdminPanel adminToken={adminToken} />
         )}
       </main>

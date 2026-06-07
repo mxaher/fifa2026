@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getClient, schema } from "@/lib/db/index";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 
 function verifyAdmin(request: Request): string | null {
   const token = request.headers.get("X-Admin-Token");
@@ -147,10 +147,33 @@ export async function DELETE(request: Request) {
     }
 
     const db = getClient();
+
+    // Find affected users (those with scored predictions on this match)
+    const matchPreds = await db.select({ userId: schema.predictions.userId })
+      .from(schema.predictions)
+      .where(and(
+        eq(schema.predictions.matchId, id),
+        isNotNull(schema.predictions.points)
+      ));
+    const affectedUserIds = [...new Set(matchPreds.map(p => p.userId))];
+
     // Delete predictions for this match first
     await db.delete(schema.predictions).where(eq(schema.predictions.matchId, id));
     // Delete match
     await db.delete(schema.matches).where(eq(schema.matches.id, id));
+
+    // Recalculate totalPoints for affected users
+    for (const uid of affectedUserIds) {
+      const userPreds = await db.select()
+        .from(schema.predictions)
+        .where(eq(schema.predictions.userId, uid));
+      const total = userPreds
+        .filter(p => p.points !== null)
+        .reduce((sum, p) => sum + (p.points ?? 0), 0);
+      await db.update(schema.users)
+        .set({ totalPoints: total })
+        .where(eq(schema.users.id, uid));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

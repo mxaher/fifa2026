@@ -96,12 +96,10 @@ test.describe('📡 API — CRUD & Data Integrity', () => {
     expect([409, 400]).toContain(res.status());
   });
 
-  test('GET /api/sync — unauthenticated sync can be triggered (design issue)', async ({ request }) => {
-    // The GET /api/sync endpoint has NO auth check
+  test('GET /api/sync — unauthenticated sync is rejected (admin token required)', async ({ request }) => {
+    // The GET /api/sync endpoint requires admin auth
     const res = await request.get('/api/sync');
-    // It will either succeed or fail depending on external API availability
-    // But the important thing is it returns data without auth
-    expect(res.status()).toBe(200);
+    expect(res.status()).toBe(401);
   });
 
   test('Pagination consistency — no duplicate IDs across pages', async ({ request }) => {
