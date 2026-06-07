@@ -83,10 +83,12 @@ export async function sendEmail(
   }
 
   // Try Resend first
+  let resendError = "";
   if (config.apiKey) {
     const result = await sendViaResend(config, subject, htmlBody);
     if (result.success) return result;
-    console.warn("[email] Resend failed, trying Mailjet fallback:", result.error);
+    resendError = result.error || "";
+    console.warn("[email] Resend failed, trying Mailjet fallback:", resendError);
   }
 
   // Fallback to Mailjet
@@ -98,5 +100,5 @@ export async function sendEmail(
     return { success: false, error: "No email provider configured (set Resend or Mailjet API keys)" };
   }
 
-  return { success: false, error: "Resend failed and Mailjet not configured" };
+  return { success: false, error: "Resend: " + resendError };
 }

@@ -372,7 +372,7 @@ export async function POST(request: Request) {
     const configs = await db.select().from(schema.emailConfig).limit(1);
     const config = configs[0];
 
-    if (!config || !config.apiKey) {
+    if (!config || (!config.apiKey && (!config.mailjetApiKey || !config.mailjetSecretKey))) {
       return NextResponse.json({ error: "إعدادات البريد الإلكتروني غير مكوّنة" }, { status: 400 });
     }
 
@@ -496,6 +496,8 @@ export async function POST(request: Request) {
     // Send email
     const emailConfig: EmailConfig = {
       apiKey: config.apiKey,
+      mailjetApiKey: config.mailjetApiKey || undefined,
+      mailjetSecretKey: config.mailjetSecretKey || undefined,
       fromEmail: config.fromEmail,
       fromName: config.fromName || "ملك التوقعات",
       recipients,

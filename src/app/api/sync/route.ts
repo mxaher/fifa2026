@@ -49,7 +49,7 @@ async function sendSyncErrorNotification(report: Awaited<ReturnType<typeof syncR
     `;
 
     await sendEmail(
-      { apiKey: config.apiKey, fromEmail: config.fromEmail, fromName: config.fromName, recipients },
+      { apiKey: config.apiKey, mailjetApiKey: config.mailjetApiKey || undefined, mailjetSecretKey: config.mailjetSecretKey || undefined, fromEmail: config.fromEmail, fromName: config.fromName, recipients },
       `⚠️ ${report.errors.length} خطأ في مزامنة النتائج - ملك التوقعات`,
       html
     );
