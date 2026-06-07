@@ -28,6 +28,7 @@ export async function GET(request: Request) {
           fromName: "ملك التوقعات",
           recipients: [],
           autoSendDaily: false,
+          notifyOnSyncError: false,
           lastSentAt: null,
         },
       });
@@ -72,24 +73,17 @@ export async function POST(request: Request) {
     const db = getClient();
     const existing = await db.select().from(schema.emailConfig).limit(1);
 
-    const updateData: Record<string, unknown> = {
-      fromEmail,
-      fromName: fromName || "ملك التوقعات",
-      recipients: JSON.stringify(recipients),
-      autoSendDaily: autoSendDaily ?? false,
-      notifyOnSyncError: notifyOnSyncError ?? false,
-      updatedAt: new Date(),
-    };
-
-    // Only update apiKey if a new one was provided (not masked)
-    if (apiKey && !apiKey.startsWith("••••")) {
-      updateData.apiKey = apiKey;
-    }
-
     if (existing.length > 0) {
-      await db.update(schema.emailConfig)
-        .set(updateData)
-        .where(eq(schema.emailConfig.id, "default"));
+      const existing_ = existing[0];
+      await db.update(schema.emailConfig).set({
+        apiKey: apiKey && !apiKey.startsWith("••••") ? apiKey : existing_.apiKey,
+        fromEmail,
+        fromName: fromName || "ملك التوقعات",
+        recipients: JSON.stringify(recipients),
+        autoSendDaily: autoSendDaily ?? false,
+        notifyOnSyncError: notifyOnSyncError ?? false,
+        updatedAt: new Date(),
+      }).where(eq(schema.emailConfig.id, existing_.id));
     } else {
       await db.insert(schema.emailConfig).values({
         id: "default",
