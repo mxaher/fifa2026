@@ -706,12 +706,12 @@ function makeVirtualKnockout(matchNumber: number, venue: string, kickoff: string
 }
 
 const KNOCKOUT_MATCHES: MatchWithTeams[] = [
-  makeVirtualKnockout(73, 'Estadio Azteca', '2026-06-28T16:00:00Z', 'MEX'),
-  makeVirtualKnockout(74, 'SoFi Stadium', '2026-06-28T19:00:00Z', 'USA'),
-  makeVirtualKnockout(75, 'NRG Stadium', '2026-06-28T21:00:00Z', 'GER'),
-  makeVirtualKnockout(76, 'MetLife Stadium', '2026-06-29T16:00:00Z', 'BEL'),
-  makeVirtualKnockout(77, 'AT&T Stadium', '2026-06-29T19:00:00Z', 'FRA'),
-  makeVirtualKnockout(78, "Levi's Stadium", '2026-06-29T21:00:00Z', 'ESP'),
+  makeVirtualKnockout(73, 'Estadio Azteca', '2026-06-28T16:00:00Z'),
+  makeVirtualKnockout(74, 'SoFi Stadium', '2026-06-28T19:00:00Z'),
+  makeVirtualKnockout(75, 'NRG Stadium', '2026-06-28T21:00:00Z'),
+  makeVirtualKnockout(76, 'MetLife Stadium', '2026-06-29T16:00:00Z'),
+  makeVirtualKnockout(77, 'AT&T Stadium', '2026-06-29T19:00:00Z'),
+  makeVirtualKnockout(78, "Levi's Stadium", '2026-06-29T21:00:00Z'),
   makeVirtualKnockout(79, 'BMO Field', '2026-06-30T16:00:00Z'),
   makeVirtualKnockout(80, 'Lumen Field', '2026-06-30T19:00:00Z'),
   makeVirtualKnockout(81, 'Hard Rock Stadium', '2026-06-30T21:00:00Z'),
@@ -747,7 +747,62 @@ function MatchesView({ user }: { user: User }) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['A']));
 
   const allDisplayMatches = useMemo(() => {
-    const virtual = KNOCKOUT_MATCHES.filter(km => !matches.find(m => m.matchNumber === km.matchNumber));
+    function computeGroupStanding(teamId: string, groupLetter: string) {
+      const groupMatches = matches.filter(m => m.groupLetter === groupLetter && m.status === 'finished' && m.homeScore != null && m.awayScore != null);
+      let pts = 0, gf = 0, ga = 0, played = 0;
+      for (const m of groupMatches) {
+        if (m.homeTeam?.id === teamId) { gf += m.homeScore; ga += m.awayScore; played++; pts += m.homeScore > m.awayScore ? 3 : m.homeScore === m.awayScore ? 1 : 0; }
+        if (m.awayTeam?.id === teamId) { gf += m.awayScore; ga += m.homeScore; played++; pts += m.awayScore > m.homeScore ? 3 : m.awayScore === m.homeScore ? 1 : 0; }
+      }
+      return { teamId, pts, gd: gf - ga, gf, played };
+    }
+
+    function fillKnockoutTeams(): MatchWithTeams[] {
+      const groupLetters = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+      const allStandings: { teamId: string; pts: number; gd: number; gf: number; played: number; group: string }[] = [];
+
+      for (const gl of groupLetters) {
+        const groupTeams = [...new Set(matches.filter(m => m.groupLetter === gl).flatMap(m => [m.homeTeam?.id, m.awayTeam?.id]).filter(Boolean))] as string[];
+        const standings = groupTeams.map(id => ({ ...computeGroupStanding(id, gl), group: gl }))
+          .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+        standings.forEach((s, i) => {
+          if (i < 2) allStandings.push(s); // top 2
+        });
+      }
+
+      const advanced = new Map<string, string[]>();
+      for (const gl of groupLetters) {
+        const qualifiers = allStandings.filter(s => s.group === gl).map(s => s.teamId);
+        advanced.set(gl, qualifiers);
+      }
+
+      const teamInfo = (id: string) => {
+        const m = matches.find(m => m.homeTeam?.id === id || m.awayTeam?.id === id);
+        const t = m?.homeTeam?.id === id ? m.homeTeam : m?.awayTeam;
+        return t ? { id: t.id, name: t.nameAr || t.name, nameAr: t.nameAr, flag: t.flag || '', groupLetter: t.groupLetter, fifaRank: t.fifaRank } : null;
+      };
+
+      const R32_PAIRINGS: [number, string, string][] = [
+        [0, 'A', 'B'], [0, 'C', 'D'], [0, 'B', 'C'], [0, 'D', 'E'],
+        [0, 'E', 'F'], [0, 'F', 'G'], [0, 'G', 'H'], [0, 'I', 'J'],
+        [1, 'A', 'C'], [1, 'B', 'D'], [1, 'D', 'F'], [1, 'E', 'G'],
+        [1, 'F', 'H'], [1, 'G', 'I'], [1, 'H', 'J'], [1, 'K', 'L'],
+      ];
+
+      return KNOCKOUT_MATCHES.map((km, i) => {
+        if (i >= 16) return km; // R16+ stays TBD until R32 results
+        const [pos, g1, g2] = R32_PAIRINGS[i] || [0, 'A', 'B'];
+        const q1 = (advanced.get(g1) || [])[pos];
+        const q2 = (advanced.get(g2) || [])[pos === 0 ? 1 : 0];
+        return {
+          ...km,
+          homeTeam: q1 ? teamInfo(q1) : null,
+          awayTeam: q2 ? teamInfo(q2) : null,
+        };
+      });
+    }
+
+    const virtual = fillKnockoutTeams().filter(km => !matches.find(m => m.matchNumber === km.matchNumber));
     return [...matches, ...virtual];
   }, [matches]);
 
