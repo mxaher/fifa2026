@@ -110,24 +110,9 @@ export async function POST(request: Request) {
       });
     }
 
-    // No email configured or send failed — auto-verify the user as fallback
-    try {
-      await db.update(schema.users)
-        .set({ emailVerified: true, verificationToken: null, updatedAt: new Date() })
-        .where(eq(schema.users.id, user.id));
-    } catch {}
-
     return NextResponse.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatarEmoji: user.avatarEmoji,
-        totalPoints: user.totalPoints,
-        isAdmin: false,
-        banned: false,
-        department: user.department,
-      },
+      error: "فشل إرسال بريد التحقق. يرجى التواصل مع المشرف لتأكيد حسابك يدويًا.",
+      needsVerification: true,
     });
   } catch (error) {
     console.error("Register error:", error);

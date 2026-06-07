@@ -38,20 +38,10 @@ export async function POST(request: Request) {
 
     // Check email verification (skip for admins)
     if (!user.isAdmin && !user.emailVerified) {
-      // Auto-verify users who existed before the email verification feature
-      // (they have no verificationToken since they were never issued one)
-      if (!user.verificationToken) {
-        try {
-          await db.update(schema.users)
-            .set({ emailVerified: true, updatedAt: new Date() })
-            .where(eq(schema.users.id, user.id));
-        } catch {}
-      } else {
-        return NextResponse.json({
-          error: "البريد الإلكتروني غير مؤكد. يرجى التحقق من بريدك الإلكتروني وتأكيد الحساب.",
-          needsVerification: true,
-        }, { status: 403 });
-      }
+      return NextResponse.json({
+        error: "البريد الإلكتروني غير مؤكد. يرجى التحقق من بريدك الإلكتروني أو التواصل مع المشرف لتأكيد الحساب.",
+        needsVerification: true,
+      }, { status: 403 });
     }
 
     const ADMIN_TOKEN = process.env.ADMIN_TOKEN;

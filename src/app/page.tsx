@@ -251,7 +251,7 @@ function LoginView({ onLogin }: { onLogin: (user: User) => void }) {
       const data = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
 
       if (data.error) {
-        if (data.needsVerification) {
+        if (data.needsVerification && isRegister) {
           setError(data.error);
           setRegistered(true);
         } else {
