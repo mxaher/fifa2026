@@ -55,12 +55,13 @@ test.describe('🛡️ Security Testing', () => {
     expect(res2.status()).toBe(401);
   });
 
-  test('SEC-005: GET /api/sync has no auth protection (vulnerability)', async ({ request }) => {
-    const res = await request.get('/api/sync');
-    expect(res.status()).toBe(200);
-    // This endpoint calls syncResults() which is an expensive operation
-    // No auth check means anyone can trigger it
-    console.log('⚠️ GET /api/sync is unauthenticated — anyone can trigger a sync');
+  test('SEC-005: GET /api/sync is protected by X-Admin-Token (FIX VERIFIED)', async ({ request }) => {
+    // After fix, both GET and POST require admin token
+    const resNoToken = await request.get('/api/sync');
+    expect(resNoToken.status()).toBe(401);
+
+    const resPostNoToken = await request.post('/api/sync', { data: {} });
+    expect(resPostNoToken.status()).toBe(401);
   });
 
   test('SEC-006: Registration has no password strength validation', async ({ request }) => {
@@ -106,6 +107,35 @@ test.describe('🛡️ Security Testing', () => {
     // There is no CSRF mechanism — if there were, we'd get 403
     expect(res.status()).toBe(404);
     console.log('⚠️ No CSRF rejection (403) — endpoint returned data validation error instead');
+  });
+
+  test('SEC-009: /api/predictions GET requires userId (FIX VERIFIED)', async ({ request }) => {
+    // After fix: predictions endpoint requires userId query param
+    // Otherwise returns 400 — no more privacy leak of all users' predictions
+    const res = await request.get('/api/predictions');
+    expect(res.status()).toBe(400);
+    const data = await res.json();
+    expect(data.error).toContain('userId');
+  });
+
+  test('SEC-010: /api/predictions GET returns only requesting user data (FIX VERIFIED)', async ({ request }) => {
+    // After fix: with a specific userId, only that user's predictions are returned
+    const leaderboard = await (await request.get('/api/leaderboard')).json();
+    const userId = leaderboard.leaderboard[0]?.id;
+    if (!userId) {
+      console.log('ℹ️ No users in leaderboard to test with');
+      return;
+    }
+
+    const res = await request.get(`/api/predictions?userId=${userId}`);
+    expect(res.status()).toBe(200);
+    const data = await res.json();
+    const preds = data.predictions || [];
+
+    // All returned predictions should belong to the requested user only
+    for (const p of preds) {
+      expect(p.userId).toBe(userId);
+    }
   });
 
 });

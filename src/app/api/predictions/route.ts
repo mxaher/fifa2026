@@ -8,9 +8,11 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const userId = url.searchParams.get("userId");
 
-    const allPredictions = userId
-      ? await db.select().from(schema.predictions).where(eq(schema.predictions.userId, userId))
-      : await db.select().from(schema.predictions);
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
+
+    const allPredictions = await db.select().from(schema.predictions).where(eq(schema.predictions.userId, userId));
 
     const allMatches = await db.select().from(schema.matches);
     const allTeams = await db.select().from(schema.teams);

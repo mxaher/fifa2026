@@ -91,7 +91,7 @@ test.describe('🔐 Auth Flow — localStorage-based auth', () => {
     expect(errorText2).toBeTruthy();
   });
 
-  test('SC-AUTH-008: Admin panel is gated by email check (client-side only)', async ({ page }) => {
+  test('SC-AUTH-008: Admin auto-authenticated on login (token auto-stored)', async ({ page }) => {
     await loginHelper(page);
     await page.goto(BASE);
 
@@ -101,9 +101,14 @@ test.describe('🔐 Auth Flow — localStorage-based auth', () => {
 
     await adminTab.click();
 
-    // Should see admin token prompt, not admin panel directly
-    const tokenInput = page.locator('input[type="password"]');
-    await expect(tokenInput).toBeVisible();
+    // After fix: admin token is auto-returned by login and stored in localStorage.
+    // The admin panel tabs are shown directly (no token prompt).
+    const token = await page.evaluate(() => localStorage.getItem('fifa26_admin_token'));
+    expect(token).toBeTruthy();
+
+    // The user tabs (e.g. "المستخدمين") should be visible
+    const usersTab = page.locator('text=المستخدمين');
+    await expect(usersTab).toBeVisible();
   });
 
 });
