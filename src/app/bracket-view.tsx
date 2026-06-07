@@ -57,10 +57,9 @@ const COLORS = {
 function GroupCard({ group, compact }: { group: BracketData['groups'][0]; compact: boolean }) {
   const { letter, standings } = group;
   return (
-    <div className="rounded-lg" style={{
+    <div className="rounded-lg w-full" style={{
       background: COLORS.surface,
       border: `1px solid ${COLORS.border}`,
-      width: compact ? 180 : 220,
       flexShrink: 0,
     }}>
       <div className="px-3 py-2 text-center" style={{ borderBottom: `1px solid ${COLORS.border}` }}>
@@ -91,9 +90,9 @@ function GroupCard({ group, compact }: { group: BracketData['groups'][0]; compac
                   {isTop2 && <span className="text-[8px] mr-0.5">⬤</span>}
                   {s.position}
                 </td>
-                <td className="px-2 py-1 text-right truncate" style={{ maxWidth: compact ? 80 : 120 }}>
+                <td className="px-2 py-1 text-right truncate max-w-0" style={{}}>
                   <FlagImg id={s.teamId} name={s.teamName} className="ml-1" />
-                  {compact ? s.teamId : (s.nameAr || s.teamName)}
+                  <span className="truncate">{s.nameAr || s.teamName}</span>
                 </td>
                 <td className="px-1 py-1 text-center tabular-nums" style={{ color: COLORS.primary }}>{s.played}</td>
                 <td className="px-1 py-1 text-center tabular-nums" style={{ color: COLORS.primary }}>{s.won}</td>
@@ -659,9 +658,9 @@ export default function BracketView({ userId }: { userId: string }) {
 
       {/* Groups View */}
       {viewMode === 'groups' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {bracketData.groups.map(g => (
-            <GroupCard key={g.letter} group={g} compact={compact} />
+            <GroupCard key={g.letter} group={g} compact={false} />
           ))}
         </div>
       )}
