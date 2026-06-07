@@ -616,7 +616,7 @@ function Header({ user, activeTab, onTabChange, onLogout }: { user: User; active
     { id: 'predictions', label: '🎯 التوقعات', icon: Target },
     { id: 'leaderboard', label: '🏆 المتصدرين', icon: Trophy },
     { id: 'rules', label: '📜 القواعد', icon: ScrollText },
-    { id: 'bracket', label: '🏆 السُلّم', icon: GitFork },
+    { id: 'bracket', label: '🏆 المجموعات', icon: GitFork },
     ...(isAdmin ? [{ id: 'admin', label: '🛡️ الإدارة', icon: Shield }] : []),
   ];
 
