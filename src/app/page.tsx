@@ -909,6 +909,8 @@ function MatchesView({ user }: { user: User }) {
   const today = new Date().toISOString().split('T')[0];
 
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [groupsExpanded, setGroupsExpanded] = useState(true);
+  const [knockoutExpanded, setKnockoutExpanded] = useState(true);
   useEffect(() => {
     if (sortedDates.length > 0) {
       const idx = sortedDates.indexOf(today);
@@ -1022,10 +1024,13 @@ function MatchesView({ user }: { user: User }) {
           <div className="space-y-3">
             {groupDates.length > 0 && (
               <>
-                <div className="text-center py-3 rounded-lg" style={{ background: 'rgba(46,125,50,0.1)', border: '1px solid rgba(46,125,50,0.2)' }}>
+                <button onClick={() => setGroupsExpanded(!groupsExpanded)}
+                  className="w-full text-center py-3 rounded-lg transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                  style={{ background: 'rgba(46,125,50,0.1)', border: '1px solid rgba(46,125,50,0.2)' }}>
                   <span className="text-sm font-bold" style={{ color: '#4CAF50' }}>⚽ دور المجموعات</span>
-                </div>
-                {groupDates.map(renderDate)}
+                  <span className="text-lg transition-transform" style={{ color: '#4CAF50', transform: groupsExpanded ? 'rotate(0)' : 'rotate(-90deg)' }}>▼</span>
+                </button>
+                {groupsExpanded && groupDates.map(renderDate)}
               </>
             )}
             {groupDates.length > 0 && koDates.length > 0 && (
@@ -1035,10 +1040,13 @@ function MatchesView({ user }: { user: User }) {
             )}
             {koDates.length > 0 && (
               <>
-                <div className="text-center py-3 rounded-lg" style={{ background: 'rgba(139,0,0,0.1)', border: '1px solid rgba(139,0,0,0.2)' }}>
+                <button onClick={() => setKnockoutExpanded(!knockoutExpanded)}
+                  className="w-full text-center py-3 rounded-lg transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                  style={{ background: 'rgba(139,0,0,0.1)', border: '1px solid rgba(139,0,0,0.2)' }}>
                   <span className="text-sm font-bold" style={{ color: '#F44336' }}>🏆 الأدوار الإقصائية</span>
-                </div>
-                {koDates.map(renderDate)}
+                  <span className="text-lg transition-transform" style={{ color: '#F44336', transform: knockoutExpanded ? 'rotate(0)' : 'rotate(-90deg)' }}>▼</span>
+                </button>
+                {knockoutExpanded && koDates.map(renderDate)}
               </>
             )}
           </div>
