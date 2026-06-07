@@ -2033,7 +2033,6 @@ function AdminMatchesTab({ adminToken }: { adminToken: string }) {
   const [newMatch, setNewMatch] = useState({ matchNumber: 0, stage: 'group', groupLetter: '', homeTeamId: '', awayTeamId: '', kickoff: '', venue: '' });
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [filter, setFilter] = useState('all');
-  const [seeding, setSeeding] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -2150,23 +2149,6 @@ function AdminMatchesTab({ adminToken }: { adminToken: string }) {
     } catch { showResultMsg(false, 'خطأ في الاتصال'); }
   };
 
-  const handleSeedKnockout = async () => {
-    setSeeding(true);
-    try {
-      const res = await fetch('/api/admin/seed-knockout', {
-        method: 'POST',
-        headers: { 'X-Admin-Token': adminToken },
-      });
-      const data = await res.json();
-      if (data.success) {
-        showResultMsg(true, data.message || `تم إنشاء ${data.created} مباراة`);
-        fetchData();
-      } else {
-        showResultMsg(false, data.error || 'خطأ');
-      }
-    } catch { showResultMsg(false, 'خطأ في الاتصال'); }
-    setSeeding(false);
-  };
 
   if (loading) return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>جاري التحميل...</div>;
 
@@ -2198,11 +2180,7 @@ function AdminMatchesTab({ adminToken }: { adminToken: string }) {
               style={{ background: 'linear-gradient(135deg, var(--wc-gold), #FFA000)', color: '#000' }}>
               <Plus className="h-4 w-4" /> مباراة جديدة
             </Button>
-            <Button onClick={handleSeedKnockout} disabled={seeding}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-              style={{ background: 'linear-gradient(135deg, var(--wc-sky), #1E88E5)', color: '#fff' }}>
-              {seeding ? '⏳' : '🏆'} إنشاء الإقصائيات
-            </Button>
+
           </div>
         </div>
 
