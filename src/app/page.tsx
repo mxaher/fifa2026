@@ -1033,11 +1033,6 @@ function MatchesView({ user }: { user: User }) {
                 {groupsExpanded && groupDates.map(renderDate)}
               </>
             )}
-            {groupDates.length > 0 && koDates.length > 0 && (
-              <div className="text-center py-4 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(139,0,0,0.2), rgba(255,215,0,0.1))', border: '1px solid var(--wc-gold)' }}>
-                <span className="text-base font-bold" style={{ color: 'var(--wc-gold)' }}>🏆 الأدوار الإقصائية</span>
-              </div>
-            )}
             {koDates.length > 0 && (
               <>
                 <button onClick={() => setKnockoutExpanded(!knockoutExpanded)}
