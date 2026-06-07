@@ -930,6 +930,7 @@ function MatchesView({ user }: { user: User }) {
 function PredictionsView({ user }: { user: User }) {
   const [allData, setAllData] = useState<{ predictions: any[]; matches: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showMine, setShowMine] = useState(false);
   const [filterMatch, setFilterMatch] = useState('all');
 
   useEffect(() => {
@@ -950,10 +951,19 @@ function PredictionsView({ user }: { user: User }) {
     return <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>لا توجد توقعات بعد</div>;
   }
 
+  const visiblePredictions = showMine
+    ? allData.predictions.filter((p: any) => p.userId === user.id)
+    : allData.predictions;
+
+  const visibleMatches = showMine
+    ? [...new Map(visiblePredictions.filter((p: any) => p.match).map((p: any) => [p.match.matchNumber, p.match])).values()]
+        .sort((a: any, b: any) => a.matchNumber - b.matchNumber)
+    : allData.matches;
+
   const filteredMatches = filterMatch === 'all'
-    ? allData.matches
-    : allData.matches.filter((m: any) => {
-        const preds = allData.predictions.filter((p: any) => p.matchId === m.id);
+    ? visibleMatches
+    : visibleMatches.filter((m: any) => {
+        const preds = visiblePredictions.filter((p: any) => p.matchId === m.id);
         if (filterMatch === 'exact') return preds.some((p: any) => p.pointsType === 'exact');
         if (filterMatch === 'correct') return preds.some((p: any) => p.pointsType === 'correct');
         if (filterMatch === 'wrong') return preds.some((p: any) => p.pointsType === 'wrong');
@@ -963,6 +973,28 @@ function PredictionsView({ user }: { user: User }) {
 
   return (
     <div>
+      {/* View toggle: All / Mine */}
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setShowMine(false)}
+          className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+          style={{
+            background: !showMine ? 'rgba(255,215,0,0.15)' : 'var(--bg-card)',
+            color: !showMine ? 'var(--wc-gold)' : 'var(--text-muted)',
+            border: `1px solid ${!showMine ? 'var(--wc-gold)' : 'var(--border-color)'}`,
+          }}>
+          👥 الجميع
+        </button>
+        <button onClick={() => setShowMine(true)}
+          className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+          style={{
+            background: showMine ? 'rgba(255,215,0,0.15)' : 'var(--bg-card)',
+            color: showMine ? 'var(--wc-gold)' : 'var(--text-muted)',
+            border: `1px solid ${showMine ? 'var(--wc-gold)' : 'var(--border-color)'}`,
+          }}>
+          🎯 توقعاتي
+        </button>
+      </div>
+
       {/* Filter */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         {[
@@ -987,7 +1019,7 @@ function PredictionsView({ user }: { user: User }) {
       {/* Matches with predictions */}
       <div className="space-y-6">
         {filteredMatches.map((match: any) => {
-          const matchPredictions = allData.predictions.filter((p: any) => p.matchId === match.id);
+          const matchPredictions = visiblePredictions.filter((p: any) => p.matchId === match.id);
           const hasResult = match.homeScore != null && match.awayScore != null;
 
           // Group predictions by score key "homeScore:awayScore"
