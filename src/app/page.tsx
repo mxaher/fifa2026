@@ -936,6 +936,29 @@ function MatchesView({ user }: { user: User }) {
         ))}
       </div>
 
+      {/* Today's Games */}
+      {(() => {
+        const todayMatches = filteredMatches.filter(m => {
+          const d = new Date(m.kickoff).toISOString().split('T')[0];
+          return d === today;
+        });
+        if (todayMatches.length === 0) return null;
+        return (
+          <div className="rounded-xl overflow-hidden mb-6" style={{ background: 'var(--bg-card)', border: '2px solid var(--wc-gold)' }}>
+            <div className="p-3 text-center" style={{ background: 'rgba(255,215,0,0.12)' }}>
+              <span className="text-lg font-bold" style={{ color: 'var(--wc-gold)' }}>
+                🔥 مباريات اليوم — {todayMatches.length} مباراة
+              </span>
+            </div>
+            <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+              {todayMatches.map(match => (
+                <MatchScheduleCard key={match.id} match={match} onClick={() => handleMatchClick(match)} />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Date-based schedule */}
       {(() => {
         const groupDates = sortedDates.filter(d => (matchesByDate.get(d) || []).some(m => m.groupLetter));
