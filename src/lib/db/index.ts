@@ -8,7 +8,7 @@ import * as schema from "./schema";
  * Get the D1 binding from the Cloudflare Workers environment.
  * Uses @opennextjs/cloudflare's getCloudflareContext() to access env bindings.
  */
-function getD1Binding() {
+export function getD1Binding() {
   const { env } = getCloudflareContext();
   const db = (env as Record<string, unknown>).DB;
   if (!db) {
