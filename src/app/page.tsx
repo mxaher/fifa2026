@@ -774,7 +774,74 @@ function MatchesView({ user }: { user: User }) {
     return () => { active = false; clearInterval(iv); };
   }, [user.id]);
 
-  const filteredMatches = matches.filter(m => {
+  const resultsKey = useMemo(() =>
+    matches.map(m => `${m.id}:${m.homeScore}:${m.awayScore}:${m.status}`).join('|'),
+  [matches]);
+
+  const virtualMatches = useMemo(() => {
+    function computeGroupStanding(teamId: string, groupLetter: string) {
+      const groupMatches = matches.filter(m => m.groupLetter === groupLetter && m.status === 'finished' && m.homeScore != null && m.awayScore != null);
+      let pts = 0, gf = 0, ga = 0, played = 0;
+      for (const m of groupMatches) {
+        const hs = m.homeScore!;
+        const as = m.awayScore!;
+        if (m.homeTeam?.id === teamId) { gf += hs; ga += as; played++; pts += hs > as ? 3 : hs === as ? 1 : 0; }
+        if (m.awayTeam?.id === teamId) { gf += as; ga += hs; played++; pts += as > hs ? 3 : as === hs ? 1 : 0; }
+      }
+      return { teamId, pts, gd: gf - ga, gf, played };
+    }
+
+    function fillKnockoutTeams(): MatchWithTeams[] {
+      const groupLetters = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+      const allStandings: { teamId: string; pts: number; gd: number; gf: number; played: number; group: string }[] = [];
+      for (const gl of groupLetters) {
+        const groupMatches = matches.filter(m => m.groupLetter === gl && m.status === 'finished' && m.homeScore != null && m.awayScore != null);
+        if (groupMatches.length === 0) continue;
+        const groupTeams = [...new Set(matches.filter(m => m.groupLetter === gl).flatMap(m => [m.homeTeam?.id, m.awayTeam?.id]).filter(Boolean))] as string[];
+        const standings = groupTeams.map(id => ({ ...computeGroupStanding(id, gl), group: gl }))
+          .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+        standings.forEach((s, i) => { if (i < 2) allStandings.push(s); });
+      }
+      const advanced = new Map<string, string[]>();
+      for (const gl of groupLetters) {
+        const qualifiers = allStandings.filter(s => s.group === gl).map(s => s.teamId);
+        advanced.set(gl, qualifiers);
+      }
+      const teamInfo = (id: string) => {
+        const m = matches.find(m => m.homeTeam?.id === id || m.awayTeam?.id === id);
+        const t = m?.homeTeam?.id === id ? m.homeTeam : m?.awayTeam;
+        return t ? { id: t.id, name: t.nameAr || t.name, nameAr: t.nameAr, flag: t.flag || '', groupLetter: t.groupLetter, fifaRank: t.fifaRank } : null;
+      };
+      const R32_PAIRINGS: [number, string, string][] = [
+        [0, 'A', 'B'], [0, 'C', 'D'], [0, 'B', 'C'], [0, 'D', 'E'],
+        [0, 'E', 'F'], [0, 'F', 'G'], [0, 'G', 'H'], [0, 'I', 'J'],
+        [1, 'A', 'C'], [1, 'B', 'D'], [1, 'D', 'F'], [1, 'E', 'G'],
+        [1, 'F', 'H'], [1, 'G', 'I'], [1, 'H', 'J'], [1, 'K', 'L'],
+      ];
+      return KNOCKOUT_MATCHES.map((km, i) => {
+        if (i >= 16) return km;
+        const [pos, g1, g2] = R32_PAIRINGS[i] || [0, 'A', 'B'];
+        const q1 = (advanced.get(g1) || [])[pos];
+        const q2 = (advanced.get(g2) || [])[pos === 0 ? 1 : 0];
+        return { ...km, homeTeam: q1 ? teamInfo(q1) : null, awayTeam: q2 ? teamInfo(q2) : null } as MatchWithTeams;
+      });
+    }
+    return fillKnockoutTeams();
+  }, [resultsKey]);
+
+  const allDisplayMatches = useMemo(() => {
+    const realGroupMatches = matches.filter(m => m.groupLetter !== null);
+    const mergedVirtual = virtualMatches.map(vm => {
+      const dbMatch = matches.find(m => m.matchNumber === vm.matchNumber);
+      if (dbMatch && dbMatch.status === 'finished' && dbMatch.homeScore != null) {
+        return { ...vm, homeScore: dbMatch.homeScore, awayScore: dbMatch.awayScore, status: dbMatch.status };
+      }
+      return vm;
+    });
+    return [...realGroupMatches, ...mergedVirtual];
+  }, [matches, virtualMatches]);
+
+  const filteredMatches = allDisplayMatches.filter(m => {
     if (filter === 'upcoming') return m.status === 'upcoming';
     if (filter === 'live') return m.status === 'live';
     if (filter === 'finished') return m.status === 'finished';
