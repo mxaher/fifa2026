@@ -156,8 +156,14 @@ const MATCHES_DATA = [
   { matchNumber: 72, groupLetter: "K", homeTeamId: "COD", awayTeamId: "UZB", kickoff: new Date("2026-06-27T23:30:00Z"), venue: "Mercedes-Benz Stadium" },
 ];
 
-async function seed() {
+export async function seed() {
   const db = getClient();
+
+  console.log("🗑️  Clearing old matches...");
+  await db.delete(schema.matches);
+
+  console.log("🗑️  Clearing old teams...");
+  await db.delete(schema.teams);
 
   console.log("🌱 Seeding teams...");
   const insertedTeams = await db.insert(schema.teams).values(
@@ -178,6 +184,5 @@ async function seed() {
   console.log(`✅ Inserted ${insertedMatches.length} matches`);
 
   console.log("✅ Seed complete!");
+  return { teams: insertedTeams.length, matches: insertedMatches.length };
 }
-
-seed().catch(console.error);
