@@ -154,6 +154,7 @@ const TEAM_NAME_MAP: Record<string, string> = {
   'Japan': 'Japan',
   'Morocco': 'Morocco',
   'Australia': 'Australia',
+  'Austria': 'Austria',
   'Mexico': 'Mexico',
   'Ecuador': 'Ecuador',
   'Uruguay': 'Uruguay',
