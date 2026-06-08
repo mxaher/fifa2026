@@ -974,7 +974,7 @@ function MatchesView({ user }: { user: User }) {
       {/* Date-based schedule */}
       {(() => {
         const groupDates = sortedDates.filter(d => (matchesByDate.get(d) || []).some(m => m.groupLetter));
-        const koDates = sortedDates.filter(d => (matchesByDate.get(d) || []).some(m => !m.groupLetter));
+        const koDates = sortedDates.filter(d => (matchesByDate.get(d) || []).some(m => !m.groupLetter && (m.homeTeam || m.awayTeam)));
 
         const renderDate = (date: string) => {
           const dateObj = new Date(date + 'T12:00:00');
