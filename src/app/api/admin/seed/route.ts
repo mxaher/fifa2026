@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { seed } from "@/lib/seed";
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
     const token = request.headers.get("X-Admin-Token");
     const expectedToken = (globalThis as any).ADMIN_TOKEN || process.env.ADMIN_TOKEN;
