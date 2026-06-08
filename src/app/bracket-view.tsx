@@ -10,7 +10,7 @@ const FIFA_TO_ISO: Record<string, string> = {
   JPN:'jp', SWE:'se', TUN:'tn', BEL:'be', EGY:'eg', IRN:'ir', NZL:'nz',
   POR:'pt', CRO:'hr', UZB:'uz', ALG:'dz', FRA:'fr', URU:'uy', PAN:'pa',
   IRQ:'iq', ARG:'ar', COL:'co', GHA:'gh', JOR:'jo', ESP:'es', COD:'cd',
-  SEN:'sn', NOR:'no', ENG:'gb-eng', KSA:'sa', CPV:'cv', BFA:'bf',
+  SEN:'sn', NOR:'no', ENG:'gb-eng', KSA:'sa', CPV:'cv', AUT:'at',
 };
 
 function FlagImg({ id, name, className }: { id?: string; name?: string; className?: string }) {

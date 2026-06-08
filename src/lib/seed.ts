@@ -37,118 +37,123 @@ const TEAMS_DATA = [
   { id: "EGY", name: "Egypt", nameAr: "مصر", flag: "🇪🇬", groupLetter: "G", fifaRank: 34, region: "CAF" },
   { id: "IRN", name: "Iran", nameAr: "إيران", flag: "🇮🇷", groupLetter: "G", fifaRank: 21, region: "AFC" },
   { id: "NZL", name: "New Zealand", nameAr: "نيوزيلندا", flag: "🇳🇿", groupLetter: "G", fifaRank: 93, region: "OFC" },
-  // Group H: Portugal, Croatia, Uzbekistan, Algeria
-  { id: "POR", name: "Portugal", nameAr: "البرتغال", flag: "🇵🇹", groupLetter: "H", fifaRank: 6, region: "UEFA" },
-  { id: "CRO", name: "Croatia", nameAr: "كرواتيا", flag: "🇭🇷", groupLetter: "H", fifaRank: 10, region: "UEFA" },
-  { id: "UZB", name: "Uzbekistan", nameAr: "أوزبكستان", flag: "🇺🇿", groupLetter: "H", fifaRank: 57, region: "AFC" },
-  { id: "ALG", name: "Algeria", nameAr: "الجزائر", flag: "🇩🇿", groupLetter: "H", fifaRank: 44, region: "CAF" },
-  // Group I: France, Uruguay, Panama, Iraq
+  // Group H: Spain, Cape Verde, Saudi Arabia, Uruguay
+  { id: "ESP", name: "Spain", nameAr: "إسبانيا", flag: "🇪🇸", groupLetter: "H", fifaRank: 8, region: "UEFA" },
+  { id: "CPV", name: "Cape Verde", nameAr: "الرأس الأخضر", flag: "🇨🇻", groupLetter: "H", fifaRank: 71, region: "CAF" },
+  { id: "KSA", name: "Saudi Arabia", nameAr: "السعودية", flag: "🇸🇦", groupLetter: "H", fifaRank: 53, region: "AFC" },
+  { id: "URU", name: "Uruguay", nameAr: "أوروغواي", flag: "🇺🇾", groupLetter: "H", fifaRank: 15, region: "CONMEBOL" },
+  // Group I: France, Senegal, Iraq, Norway
   { id: "FRA", name: "France", nameAr: "فرنسا", flag: "🇫🇷", groupLetter: "I", fifaRank: 3, region: "UEFA" },
-  { id: "URU", name: "Uruguay", nameAr: "أوروغواي", flag: "🇺🇾", groupLetter: "I", fifaRank: 15, region: "CONMEBOL" },
-  { id: "PAN", name: "Panama", nameAr: "بنما", flag: "🇵🇦", groupLetter: "I", fifaRank: 61, region: "CONCACAF" },
+  { id: "SEN", name: "Senegal", nameAr: "السنغال", flag: "🇸🇳", groupLetter: "I", fifaRank: 20, region: "CAF" },
   { id: "IRQ", name: "Iraq", nameAr: "العراق", flag: "🇮🇶", groupLetter: "I", fifaRank: 59, region: "AFC" },
-  // Group J: Argentina, Colombia, Ghana, Jordan
+  { id: "NOR", name: "Norway", nameAr: "النرويج", flag: "🇳🇴", groupLetter: "I", fifaRank: 42, region: "UEFA" },
+  // Group J: Argentina, Algeria, Austria, Jordan
   { id: "ARG", name: "Argentina", nameAr: "الأرجنتين", flag: "🇦🇷", groupLetter: "J", fifaRank: 1, region: "CONMEBOL" },
-  { id: "COL", name: "Colombia", nameAr: "كولومبيا", flag: "🇨🇴", groupLetter: "J", fifaRank: 17, region: "CONMEBOL" },
-  { id: "GHA", name: "Ghana", nameAr: "غانا", flag: "🇬🇭", groupLetter: "J", fifaRank: 60, region: "CAF" },
+  { id: "ALG", name: "Algeria", nameAr: "الجزائر", flag: "🇩🇿", groupLetter: "J", fifaRank: 44, region: "CAF" },
+  { id: "AUT", name: "Austria", nameAr: "النمسا", flag: "🇦🇹", groupLetter: "J", fifaRank: 25, region: "UEFA" },
   { id: "JOR", name: "Jordan", nameAr: "الأردن", flag: "🇯🇴", groupLetter: "J", fifaRank: 70, region: "AFC" },
-  // Group K: Spain, DR Congo, Senegal, Norway
-  { id: "ESP", name: "Spain", nameAr: "إسبانيا", flag: "🇪🇸", groupLetter: "K", fifaRank: 8, region: "UEFA" },
+  // Group K: Portugal, DR Congo, Uzbekistan, Colombia
+  { id: "POR", name: "Portugal", nameAr: "البرتغال", flag: "🇵🇹", groupLetter: "K", fifaRank: 6, region: "UEFA" },
   { id: "COD", name: "DR Congo", nameAr: "جمهورية الكونغو الديمقراطية", flag: "🇨🇩", groupLetter: "K", fifaRank: 46, region: "CAF" },
-  { id: "SEN", name: "Senegal", nameAr: "السنغال", flag: "🇸🇳", groupLetter: "K", fifaRank: 20, region: "CAF" },
-  { id: "NOR", name: "Norway", nameAr: "النرويج", flag: "🇳🇴", groupLetter: "K", fifaRank: 42, region: "UEFA" },
-  // Group L: England, Saudi Arabia, Cape Verde, Burkina Faso
+  { id: "UZB", name: "Uzbekistan", nameAr: "أوزبكستان", flag: "🇺🇿", groupLetter: "K", fifaRank: 57, region: "AFC" },
+  { id: "COL", name: "Colombia", nameAr: "كولومبيا", flag: "🇨🇴", groupLetter: "K", fifaRank: 17, region: "CONMEBOL" },
+  // Group L: England, Croatia, Ghana, Panama
   { id: "ENG", name: "England", nameAr: "إنجلترا", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", groupLetter: "L", fifaRank: 9, region: "UEFA" },
-  { id: "KSA", name: "Saudi Arabia", nameAr: "السعودية", flag: "🇸🇦", groupLetter: "L", fifaRank: 53, region: "AFC" },
-  { id: "CPV", name: "Cape Verde", nameAr: "الرأس الأخضر", flag: "🇨🇻", groupLetter: "L", fifaRank: 71, region: "CAF" },
-  { id: "BFA", name: "Burkina Faso", nameAr: "بوركينافاسو", flag: "🇧🇫", groupLetter: "L", fifaRank: 67, region: "CAF" },
+  { id: "CRO", name: "Croatia", nameAr: "كرواتيا", flag: "🇭🇷", groupLetter: "L", fifaRank: 10, region: "UEFA" },
+  { id: "GHA", name: "Ghana", nameAr: "غانا", flag: "🇬🇭", groupLetter: "L", fifaRank: 60, region: "CAF" },
+  { id: "PAN", name: "Panama", nameAr: "بنما", flag: "🇵🇦", groupLetter: "L", fifaRank: 61, region: "CONCACAF" },
 ];
 
 const MATCHES_DATA = [
-  // Group A
-  { matchNumber: 1, groupLetter: "A", homeTeamId: "MEX", awayTeamId: "ZAF", kickoff: new Date("2026-06-11T15:00:00Z"), venue: "Estadio Azteca" },
-  { matchNumber: 2, groupLetter: "A", homeTeamId: "KOR", awayTeamId: "CZE", kickoff: new Date("2026-06-11T21:00:00Z"), venue: "Estadio Akron" },
-  { matchNumber: 25, groupLetter: "A", homeTeamId: "CZE", awayTeamId: "ZAF", kickoff: new Date("2026-06-18T15:00:00Z"), venue: "Mercedes-Benz Stadium" },
-  { matchNumber: 28, groupLetter: "A", homeTeamId: "MEX", awayTeamId: "KOR", kickoff: new Date("2026-06-18T21:00:00Z"), venue: "Estadio Akron" },
-  { matchNumber: 53, groupLetter: "A", homeTeamId: "CZE", awayTeamId: "MEX", kickoff: new Date("2026-06-24T18:00:00Z"), venue: "Estadio Azteca" },
-  { matchNumber: 54, groupLetter: "A", homeTeamId: "ZAF", awayTeamId: "KOR", kickoff: new Date("2026-06-24T18:00:00Z"), venue: "Estadio BBVA" },
-  // Group B
-  { matchNumber: 3, groupLetter: "B", homeTeamId: "CAN", awayTeamId: "BIH", kickoff: new Date("2026-06-12T16:00:00Z"), venue: "BMO Field" },
-  { matchNumber: 8, groupLetter: "B", homeTeamId: "QAT", awayTeamId: "CHE", kickoff: new Date("2026-06-12T19:00:00Z"), venue: "Levi's Stadium" },
-  { matchNumber: 26, groupLetter: "B", homeTeamId: "CHE", awayTeamId: "BIH", kickoff: new Date("2026-06-18T16:00:00Z"), venue: "SoFi Stadium" },
-  { matchNumber: 27, groupLetter: "B", homeTeamId: "CAN", awayTeamId: "QAT", kickoff: new Date("2026-06-18T19:00:00Z"), venue: "BC Place" },
-  { matchNumber: 51, groupLetter: "B", homeTeamId: "CHE", awayTeamId: "CAN", kickoff: new Date("2026-06-24T13:00:00Z"), venue: "BC Place" },
-  { matchNumber: 52, groupLetter: "B", homeTeamId: "BIH", awayTeamId: "QAT", kickoff: new Date("2026-06-24T13:00:00Z"), venue: "Lumen Field" },
-  // Group C
-  { matchNumber: 5, groupLetter: "C", homeTeamId: "HAI", awayTeamId: "SCO", kickoff: new Date("2026-06-13T16:00:00Z"), venue: "Gillette Stadium" },
-  { matchNumber: 7, groupLetter: "C", homeTeamId: "BRA", awayTeamId: "MAR", kickoff: new Date("2026-06-13T21:00:00Z"), venue: "MetLife Stadium" },
-  { matchNumber: 29, groupLetter: "C", homeTeamId: "BRA", awayTeamId: "HAI", kickoff: new Date("2026-06-19T13:00:00Z"), venue: "Lincoln Financial Field" },
-  { matchNumber: 30, groupLetter: "C", homeTeamId: "SCO", awayTeamId: "MAR", kickoff: new Date("2026-06-19T16:00:00Z"), venue: "Gillette Stadium" },
-  { matchNumber: 49, groupLetter: "C", homeTeamId: "SCO", awayTeamId: "BRA", kickoff: new Date("2026-06-24T20:00:00Z"), venue: "Hard Rock Stadium" },
-  { matchNumber: 50, groupLetter: "C", homeTeamId: "MAR", awayTeamId: "HAI", kickoff: new Date("2026-06-24T20:00:00Z"), venue: "Mercedes-Benz Stadium" },
-  // Group D
-  { matchNumber: 4, groupLetter: "D", homeTeamId: "USA", awayTeamId: "PAR", kickoff: new Date("2026-06-12T22:30:00Z"), venue: "SoFi Stadium" },
-  { matchNumber: 6, groupLetter: "D", homeTeamId: "AUS", awayTeamId: "TUR", kickoff: new Date("2026-06-12T19:00:00Z"), venue: "BC Place" },
-  { matchNumber: 31, groupLetter: "D", homeTeamId: "TUR", awayTeamId: "PAR", kickoff: new Date("2026-06-19T21:00:00Z"), venue: "Levi's Stadium" },
-  { matchNumber: 32, groupLetter: "D", homeTeamId: "USA", awayTeamId: "AUS", kickoff: new Date("2026-06-19T22:30:00Z"), venue: "Lumen Field" },
-  { matchNumber: 59, groupLetter: "D", homeTeamId: "TUR", awayTeamId: "USA", kickoff: new Date("2026-06-25T20:00:00Z"), venue: "SoFi Stadium" },
-  { matchNumber: 60, groupLetter: "D", homeTeamId: "PAR", awayTeamId: "AUS", kickoff: new Date("2026-06-25T20:00:00Z"), venue: "Levi's Stadium" },
-  // Group E
-  { matchNumber: 9, groupLetter: "E", homeTeamId: "CIV", awayTeamId: "ECU", kickoff: new Date("2026-06-14T16:00:00Z"), venue: "Lincoln Financial Field" },
-  { matchNumber: 10, groupLetter: "E", homeTeamId: "GER", awayTeamId: "CUW", kickoff: new Date("2026-06-14T19:00:00Z"), venue: "NRG Stadium" },
-  { matchNumber: 33, groupLetter: "E", homeTeamId: "GER", awayTeamId: "CIV", kickoff: new Date("2026-06-20T13:00:00Z"), venue: "BMO Field" },
-  { matchNumber: 34, groupLetter: "E", homeTeamId: "ECU", awayTeamId: "CUW", kickoff: new Date("2026-06-20T16:00:00Z"), venue: "Arrowhead Stadium" },
-  { matchNumber: 55, groupLetter: "E", homeTeamId: "CUW", awayTeamId: "CIV", kickoff: new Date("2026-06-25T15:00:00Z"), venue: "Lincoln Financial Field" },
-  { matchNumber: 56, groupLetter: "E", homeTeamId: "ECU", awayTeamId: "GER", kickoff: new Date("2026-06-25T15:00:00Z"), venue: "MetLife Stadium" },
-  // Group F
-  { matchNumber: 11, groupLetter: "F", homeTeamId: "NED", awayTeamId: "JPN", kickoff: new Date("2026-06-14T21:00:00Z"), venue: "AT&T Stadium" },
-  { matchNumber: 12, groupLetter: "F", homeTeamId: "SWE", awayTeamId: "TUN", kickoff: new Date("2026-06-14T18:00:00Z"), venue: "Estadio BBVA" },
-  { matchNumber: 35, groupLetter: "F", homeTeamId: "NED", awayTeamId: "SWE", kickoff: new Date("2026-06-20T19:00:00Z"), venue: "NRG Stadium" },
-  { matchNumber: 36, groupLetter: "F", homeTeamId: "TUN", awayTeamId: "JPN", kickoff: new Date("2026-06-20T18:00:00Z"), venue: "Estadio BBVA" },
-  { matchNumber: 57, groupLetter: "F", homeTeamId: "JPN", awayTeamId: "SWE", kickoff: new Date("2026-06-25T18:00:00Z"), venue: "AT&T Stadium" },
-  { matchNumber: 58, groupLetter: "F", homeTeamId: "TUN", awayTeamId: "NED", kickoff: new Date("2026-06-25T18:00:00Z"), venue: "Arrowhead Stadium" },
-  // Group G
-  { matchNumber: 15, groupLetter: "G", homeTeamId: "IRN", awayTeamId: "NZL", kickoff: new Date("2026-06-15T13:00:00Z"), venue: "Gillette Stadium" },
-  { matchNumber: 16, groupLetter: "G", homeTeamId: "BEL", awayTeamId: "EGY", kickoff: new Date("2026-06-15T16:00:00Z"), venue: "Lumen Field" },
-  { matchNumber: 37, groupLetter: "G", homeTeamId: "BEL", awayTeamId: "IRN", kickoff: new Date("2026-06-21T13:00:00Z"), venue: "NRG Stadium" },
-  { matchNumber: 38, groupLetter: "G", homeTeamId: "NZL", awayTeamId: "EGY", kickoff: new Date("2026-06-21T16:00:00Z"), venue: "BMO Field" },
-  { matchNumber: 61, groupLetter: "G", homeTeamId: "IRN", awayTeamId: "BEL", kickoff: new Date("2026-06-26T13:00:00Z"), venue: "Lincoln Financial Field" },
-  { matchNumber: 62, groupLetter: "G", homeTeamId: "EGY", awayTeamId: "NZL", kickoff: new Date("2026-06-26T13:00:00Z"), venue: "Arrowhead Stadium" },
-  // Group H
-  { matchNumber: 13, groupLetter: "H", homeTeamId: "UZB", awayTeamId: "ALG", kickoff: new Date("2026-06-15T16:00:00Z"), venue: "Lincoln Financial Field" },
-  { matchNumber: 14, groupLetter: "H", homeTeamId: "POR", awayTeamId: "CRO", kickoff: new Date("2026-06-15T19:00:00Z"), venue: "MetLife Stadium" },
-  { matchNumber: 39, groupLetter: "H", homeTeamId: "POR", awayTeamId: "UZB", kickoff: new Date("2026-06-21T18:00:00Z"), venue: "SoFi Stadium" },
-  { matchNumber: 40, groupLetter: "H", homeTeamId: "CRO", awayTeamId: "ALG", kickoff: new Date("2026-06-21T21:00:00Z"), venue: "Hard Rock Stadium" },
-  { matchNumber: 63, groupLetter: "H", homeTeamId: "UZB", awayTeamId: "POR", kickoff: new Date("2026-06-26T16:00:00Z"), venue: "BMO Field" },
-  { matchNumber: 64, groupLetter: "H", homeTeamId: "ALG", awayTeamId: "CRO", kickoff: new Date("2026-06-26T16:00:00Z"), venue: "NRG Stadium" },
-  // Group I
-  { matchNumber: 17, groupLetter: "I", homeTeamId: "PAN", awayTeamId: "IRQ", kickoff: new Date("2026-06-16T14:00:00Z"), venue: "NRG Stadium" },
-  { matchNumber: 18, groupLetter: "I", homeTeamId: "FRA", awayTeamId: "URU", kickoff: new Date("2026-06-16T17:00:00Z"), venue: "AT&T Stadium" },
-  { matchNumber: 41, groupLetter: "I", homeTeamId: "FRA", awayTeamId: "PAN", kickoff: new Date("2026-06-22T14:00:00Z"), venue: "Estadio Azteca" },
-  { matchNumber: 42, groupLetter: "I", homeTeamId: "IRQ", awayTeamId: "URU", kickoff: new Date("2026-06-22T17:00:00Z"), venue: "Arrowhead Stadium" },
-  { matchNumber: 65, groupLetter: "I", homeTeamId: "IRQ", awayTeamId: "FRA", kickoff: new Date("2026-06-26T19:00:00Z"), venue: "MetLife Stadium" },
-  { matchNumber: 66, groupLetter: "I", homeTeamId: "URU", awayTeamId: "PAN", kickoff: new Date("2026-06-26T19:00:00Z"), venue: "Gillette Stadium" },
-  // Group J
-  { matchNumber: 19, groupLetter: "J", homeTeamId: "GHA", awayTeamId: "JOR", kickoff: new Date("2026-06-16T14:00:00Z"), venue: "Estadio Akron" },
-  { matchNumber: 20, groupLetter: "J", homeTeamId: "ARG", awayTeamId: "COL", kickoff: new Date("2026-06-16T20:00:00Z"), venue: "MetLife Stadium" },
-  { matchNumber: 43, groupLetter: "J", homeTeamId: "ARG", awayTeamId: "GHA", kickoff: new Date("2026-06-22T19:00:00Z"), venue: "SoFi Stadium" },
-  { matchNumber: 44, groupLetter: "J", homeTeamId: "JOR", awayTeamId: "COL", kickoff: new Date("2026-06-22T13:00:00Z"), venue: "Estadio BBVA" },
-  { matchNumber: 67, groupLetter: "J", homeTeamId: "JOR", awayTeamId: "ARG", kickoff: new Date("2026-06-27T18:00:00Z"), venue: "Hard Rock Stadium" },
-  { matchNumber: 68, groupLetter: "J", homeTeamId: "COL", awayTeamId: "GHA", kickoff: new Date("2026-06-27T18:00:00Z"), venue: "BC Place" },
-  // Group K
-  { matchNumber: 21, groupLetter: "K", homeTeamId: "SEN", awayTeamId: "NOR", kickoff: new Date("2026-06-17T15:00:00Z"), venue: "Lumen Field" },
-  { matchNumber: 22, groupLetter: "K", homeTeamId: "ESP", awayTeamId: "COD", kickoff: new Date("2026-06-17T18:00:00Z"), venue: "AT&T Stadium" },
-  { matchNumber: 45, groupLetter: "K", homeTeamId: "ESP", awayTeamId: "SEN", kickoff: new Date("2026-06-23T15:00:00Z"), venue: "Estadio Azteca" },
-  { matchNumber: 46, groupLetter: "K", homeTeamId: "NOR", awayTeamId: "COD", kickoff: new Date("2026-06-23T18:00:00Z"), venue: "Gillette Stadium" },
-  { matchNumber: 69, groupLetter: "K", homeTeamId: "NOR", awayTeamId: "ESP", kickoff: new Date("2026-06-27T15:00:00Z"), venue: "BC Place" },
-  { matchNumber: 70, groupLetter: "K", homeTeamId: "COD", awayTeamId: "SEN", kickoff: new Date("2026-06-27T15:00:00Z"), venue: "Estadio Akron" },
-  // Group L
-  { matchNumber: 23, groupLetter: "L", homeTeamId: "CPV", awayTeamId: "BFA", kickoff: new Date("2026-06-17T13:00:00Z"), venue: "Estadio BBVA" },
-  { matchNumber: 24, groupLetter: "L", homeTeamId: "ENG", awayTeamId: "KSA", kickoff: new Date("2026-06-17T20:00:00Z"), venue: "NRG Stadium" },
-  { matchNumber: 47, groupLetter: "L", homeTeamId: "ENG", awayTeamId: "CPV", kickoff: new Date("2026-06-23T13:00:00Z"), venue: "Arrowhead Stadium" },
-  { matchNumber: 48, groupLetter: "L", homeTeamId: "BFA", awayTeamId: "KSA", kickoff: new Date("2026-06-23T20:00:00Z"), venue: "SoFi Stadium" },
-  { matchNumber: 71, groupLetter: "L", homeTeamId: "BFA", awayTeamId: "ENG", kickoff: new Date("2026-06-27T20:00:00Z"), venue: "MetLife Stadium" },
-  { matchNumber: 72, groupLetter: "L", homeTeamId: "KSA", awayTeamId: "CPV", kickoff: new Date("2026-06-27T20:00:00Z"), venue: "Hard Rock Stadium" },
+  // June 11 — Group A
+  { matchNumber: 1, groupLetter: "A", homeTeamId: "MEX", awayTeamId: "ZAF", kickoff: new Date("2026-06-11T19:00:00Z"), venue: "Estadio Azteca" },
+  { matchNumber: 2, groupLetter: "A", homeTeamId: "KOR", awayTeamId: "CZE", kickoff: new Date("2026-06-12T02:00:00Z"), venue: "Estadio Akron" },
+  // June 12 — Group B + Group D
+  { matchNumber: 3, groupLetter: "B", homeTeamId: "CAN", awayTeamId: "BIH", kickoff: new Date("2026-06-12T19:00:00Z"), venue: "BMO Field" },
+  { matchNumber: 4, groupLetter: "D", homeTeamId: "USA", awayTeamId: "PAR", kickoff: new Date("2026-06-13T01:00:00Z"), venue: "SoFi Stadium" },
+  // June 13 — Group C + Group D + Group B
+  { matchNumber: 5, groupLetter: "C", homeTeamId: "BRA", awayTeamId: "MAR", kickoff: new Date("2026-06-13T22:00:00Z"), venue: "Gillette Stadium" },
+  { matchNumber: 6, groupLetter: "D", homeTeamId: "AUS", awayTeamId: "TUR", kickoff: new Date("2026-06-14T04:00:00Z"), venue: "BC Place" },
+  { matchNumber: 7, groupLetter: "C", homeTeamId: "HAI", awayTeamId: "SCO", kickoff: new Date("2026-06-13T22:00:00Z"), venue: "MetLife Stadium" },
+  { matchNumber: 8, groupLetter: "B", homeTeamId: "QAT", awayTeamId: "CHE", kickoff: new Date("2026-06-13T19:00:00Z"), venue: "Levi's Stadium" },
+  // June 14 — Group E + Group F
+  { matchNumber: 9, groupLetter: "E", homeTeamId: "GER", awayTeamId: "CUW", kickoff: new Date("2026-06-14T17:00:00Z"), venue: "Lincoln Financial Field" },
+  { matchNumber: 10, groupLetter: "E", homeTeamId: "CIV", awayTeamId: "ECU", kickoff: new Date("2026-06-14T23:00:00Z"), venue: "NRG Stadium" },
+  { matchNumber: 11, groupLetter: "F", homeTeamId: "NED", awayTeamId: "JPN", kickoff: new Date("2026-06-14T20:00:00Z"), venue: "AT&T Stadium" },
+  { matchNumber: 12, groupLetter: "F", homeTeamId: "SWE", awayTeamId: "TUN", kickoff: new Date("2026-06-15T02:00:00Z"), venue: "Estadio BBVA" },
+  // June 15 — Group H + Group G
+  { matchNumber: 13, groupLetter: "H", homeTeamId: "ESP", awayTeamId: "CPV", kickoff: new Date("2026-06-15T16:00:00Z"), venue: "Hard Rock Stadium" },
+  { matchNumber: 14, groupLetter: "H", homeTeamId: "KSA", awayTeamId: "URU", kickoff: new Date("2026-06-15T22:00:00Z"), venue: "Mercedes-Benz Stadium" },
+  { matchNumber: 15, groupLetter: "G", homeTeamId: "BEL", awayTeamId: "EGY", kickoff: new Date("2026-06-15T19:00:00Z"), venue: "SoFi Stadium" },
+  { matchNumber: 16, groupLetter: "G", homeTeamId: "IRN", awayTeamId: "NZL", kickoff: new Date("2026-06-16T01:00:00Z"), venue: "Lumen Field" },
+  // June 16 — Group I + Group J
+  { matchNumber: 17, groupLetter: "I", homeTeamId: "FRA", awayTeamId: "SEN", kickoff: new Date("2026-06-16T19:00:00Z"), venue: "MetLife Stadium" },
+  { matchNumber: 18, groupLetter: "I", homeTeamId: "IRQ", awayTeamId: "NOR", kickoff: new Date("2026-06-16T22:00:00Z"), venue: "Gillette Stadium" },
+  { matchNumber: 19, groupLetter: "J", homeTeamId: "ARG", awayTeamId: "ALG", kickoff: new Date("2026-06-17T01:00:00Z"), venue: "Arrowhead Stadium" },
+  { matchNumber: 20, groupLetter: "J", homeTeamId: "AUT", awayTeamId: "JOR", kickoff: new Date("2026-06-17T04:00:00Z"), venue: "Levi's Stadium" },
+  // June 17 — Group L + Group K
+  { matchNumber: 21, groupLetter: "L", homeTeamId: "ENG", awayTeamId: "CRO", kickoff: new Date("2026-06-17T20:00:00Z"), venue: "BMO Field" },
+  { matchNumber: 22, groupLetter: "L", homeTeamId: "GHA", awayTeamId: "PAN", kickoff: new Date("2026-06-17T23:00:00Z"), venue: "AT&T Stadium" },
+  { matchNumber: 23, groupLetter: "K", homeTeamId: "POR", awayTeamId: "COD", kickoff: new Date("2026-06-17T17:00:00Z"), venue: "NRG Stadium" },
+  { matchNumber: 24, groupLetter: "K", homeTeamId: "UZB", awayTeamId: "COL", kickoff: new Date("2026-06-18T02:00:00Z"), venue: "Estadio Azteca" },
+  // June 18 — Group A + Group B
+  { matchNumber: 25, groupLetter: "A", homeTeamId: "CZE", awayTeamId: "ZAF", kickoff: new Date("2026-06-18T16:00:00Z"), venue: "Mercedes-Benz Stadium" },
+  { matchNumber: 26, groupLetter: "B", homeTeamId: "CHE", awayTeamId: "BIH", kickoff: new Date("2026-06-18T19:00:00Z"), venue: "SoFi Stadium" },
+  { matchNumber: 27, groupLetter: "B", homeTeamId: "CAN", awayTeamId: "QAT", kickoff: new Date("2026-06-18T22:00:00Z"), venue: "BC Place" },
+  { matchNumber: 28, groupLetter: "A", homeTeamId: "MEX", awayTeamId: "KOR", kickoff: new Date("2026-06-19T01:00:00Z"), venue: "Estadio Akron" },
+  // June 19 — Group C + Group D
+  { matchNumber: 29, groupLetter: "C", homeTeamId: "BRA", awayTeamId: "HAI", kickoff: new Date("2026-06-20T01:00:00Z"), venue: "Lincoln Financial Field" },
+  { matchNumber: 30, groupLetter: "C", homeTeamId: "SCO", awayTeamId: "MAR", kickoff: new Date("2026-06-19T22:00:00Z"), venue: "Gillette Stadium" },
+  { matchNumber: 31, groupLetter: "D", homeTeamId: "TUR", awayTeamId: "PAR", kickoff: new Date("2026-06-20T04:00:00Z"), venue: "Levi's Stadium" },
+  { matchNumber: 32, groupLetter: "D", homeTeamId: "USA", awayTeamId: "AUS", kickoff: new Date("2026-06-19T19:00:00Z"), venue: "Lumen Field" },
+  // June 20 — Group E + Group F
+  { matchNumber: 33, groupLetter: "E", homeTeamId: "GER", awayTeamId: "CIV", kickoff: new Date("2026-06-20T20:00:00Z"), venue: "BMO Field" },
+  { matchNumber: 34, groupLetter: "E", homeTeamId: "ECU", awayTeamId: "CUW", kickoff: new Date("2026-06-21T00:00:00Z"), venue: "Arrowhead Stadium" },
+  { matchNumber: 35, groupLetter: "F", homeTeamId: "NED", awayTeamId: "SWE", kickoff: new Date("2026-06-20T17:00:00Z"), venue: "NRG Stadium" },
+  { matchNumber: 36, groupLetter: "F", homeTeamId: "TUN", awayTeamId: "JPN", kickoff: new Date("2026-06-21T04:00:00Z"), venue: "Estadio BBVA" },
+  // June 21 — Group H + Group G
+  { matchNumber: 37, groupLetter: "H", homeTeamId: "ESP", awayTeamId: "KSA", kickoff: new Date("2026-06-21T16:00:00Z"), venue: "Hard Rock Stadium" },
+  { matchNumber: 38, groupLetter: "H", homeTeamId: "URU", awayTeamId: "CPV", kickoff: new Date("2026-06-21T22:00:00Z"), venue: "Mercedes-Benz Stadium" },
+  { matchNumber: 39, groupLetter: "G", homeTeamId: "BEL", awayTeamId: "IRN", kickoff: new Date("2026-06-21T19:00:00Z"), venue: "SoFi Stadium" },
+  { matchNumber: 40, groupLetter: "G", homeTeamId: "NZL", awayTeamId: "EGY", kickoff: new Date("2026-06-22T01:00:00Z"), venue: "BC Place" },
+  // June 22 — Group I + Group J
+  { matchNumber: 41, groupLetter: "I", homeTeamId: "FRA", awayTeamId: "IRQ", kickoff: new Date("2026-06-22T21:00:00Z"), venue: "MetLife Stadium" },
+  { matchNumber: 42, groupLetter: "I", homeTeamId: "NOR", awayTeamId: "SEN", kickoff: new Date("2026-06-23T00:00:00Z"), venue: "Lincoln Financial Field" },
+  { matchNumber: 43, groupLetter: "J", homeTeamId: "ARG", awayTeamId: "AUT", kickoff: new Date("2026-06-22T17:00:00Z"), venue: "AT&T Stadium" },
+  { matchNumber: 44, groupLetter: "J", homeTeamId: "JOR", awayTeamId: "ALG", kickoff: new Date("2026-06-23T03:00:00Z"), venue: "Levi's Stadium" },
+  // June 23 — Group L + Group K
+  { matchNumber: 45, groupLetter: "L", homeTeamId: "ENG", awayTeamId: "GHA", kickoff: new Date("2026-06-23T20:00:00Z"), venue: "MetLife Stadium" },
+  { matchNumber: 46, groupLetter: "L", homeTeamId: "PAN", awayTeamId: "CRO", kickoff: new Date("2026-06-23T23:00:00Z"), venue: "BMO Field" },
+  { matchNumber: 47, groupLetter: "K", homeTeamId: "POR", awayTeamId: "UZB", kickoff: new Date("2026-06-23T17:00:00Z"), venue: "NRG Stadium" },
+  { matchNumber: 48, groupLetter: "K", homeTeamId: "COL", awayTeamId: "COD", kickoff: new Date("2026-06-24T02:00:00Z"), venue: "Estadio Akron" },
+  // June 24 — Group C + Group B + Group A
+  { matchNumber: 49, groupLetter: "C", homeTeamId: "SCO", awayTeamId: "BRA", kickoff: new Date("2026-06-24T22:00:00Z"), venue: "Hard Rock Stadium" },
+  { matchNumber: 50, groupLetter: "C", homeTeamId: "MAR", awayTeamId: "HAI", kickoff: new Date("2026-06-24T22:00:00Z"), venue: "Mercedes-Benz Stadium" },
+  { matchNumber: 51, groupLetter: "B", homeTeamId: "CHE", awayTeamId: "CAN", kickoff: new Date("2026-06-24T19:00:00Z"), venue: "BC Place" },
+  { matchNumber: 52, groupLetter: "B", homeTeamId: "BIH", awayTeamId: "QAT", kickoff: new Date("2026-06-24T19:00:00Z"), venue: "Lumen Field" },
+  { matchNumber: 53, groupLetter: "A", homeTeamId: "CZE", awayTeamId: "MEX", kickoff: new Date("2026-06-25T01:00:00Z"), venue: "Estadio Azteca" },
+  { matchNumber: 54, groupLetter: "A", homeTeamId: "ZAF", awayTeamId: "KOR", kickoff: new Date("2026-06-25T01:00:00Z"), venue: "Estadio BBVA" },
+  // June 25 — Group E + Group F + Group D
+  { matchNumber: 55, groupLetter: "E", homeTeamId: "ECU", awayTeamId: "GER", kickoff: new Date("2026-06-26T00:00:00Z"), venue: "Lincoln Financial Field" },
+  { matchNumber: 56, groupLetter: "E", homeTeamId: "CUW", awayTeamId: "CIV", kickoff: new Date("2026-06-25T20:00:00Z"), venue: "MetLife Stadium" },
+  { matchNumber: 57, groupLetter: "F", homeTeamId: "TUN", awayTeamId: "NED", kickoff: new Date("2026-06-25T23:00:00Z"), venue: "AT&T Stadium" },
+  { matchNumber: 58, groupLetter: "F", homeTeamId: "JPN", awayTeamId: "SWE", kickoff: new Date("2026-06-25T23:00:00Z"), venue: "Arrowhead Stadium" },
+  { matchNumber: 59, groupLetter: "D", homeTeamId: "TUR", awayTeamId: "USA", kickoff: new Date("2026-06-26T02:00:00Z"), venue: "SoFi Stadium" },
+  { matchNumber: 60, groupLetter: "D", homeTeamId: "PAR", awayTeamId: "AUS", kickoff: new Date("2026-06-26T02:00:00Z"), venue: "Levi's Stadium" },
+  // June 26 — Group I + Group G + Group H
+  { matchNumber: 61, groupLetter: "I", homeTeamId: "NOR", awayTeamId: "FRA", kickoff: new Date("2026-06-26T19:00:00Z"), venue: "Gillette Stadium" },
+  { matchNumber: 62, groupLetter: "I", homeTeamId: "SEN", awayTeamId: "IRQ", kickoff: new Date("2026-06-26T19:00:00Z"), venue: "BMO Field" },
+  { matchNumber: 63, groupLetter: "G", homeTeamId: "NZL", awayTeamId: "BEL", kickoff: new Date("2026-06-27T03:00:00Z"), venue: "Lumen Field" },
+  { matchNumber: 64, groupLetter: "G", homeTeamId: "EGY", awayTeamId: "IRN", kickoff: new Date("2026-06-27T03:00:00Z"), venue: "BC Place" },
+  { matchNumber: 65, groupLetter: "H", homeTeamId: "URU", awayTeamId: "ESP", kickoff: new Date("2026-06-27T00:00:00Z"), venue: "NRG Stadium" },
+  { matchNumber: 66, groupLetter: "H", homeTeamId: "CPV", awayTeamId: "KSA", kickoff: new Date("2026-06-27T00:00:00Z"), venue: "Estadio Akron" },
+  // June 27 — Group L + Group J + Group K
+  { matchNumber: 67, groupLetter: "L", homeTeamId: "PAN", awayTeamId: "ENG", kickoff: new Date("2026-06-27T21:00:00Z"), venue: "MetLife Stadium" },
+  { matchNumber: 68, groupLetter: "L", homeTeamId: "CRO", awayTeamId: "GHA", kickoff: new Date("2026-06-27T21:00:00Z"), venue: "Lincoln Financial Field" },
+  { matchNumber: 69, groupLetter: "J", homeTeamId: "JOR", awayTeamId: "ARG", kickoff: new Date("2026-06-28T02:00:00Z"), venue: "Arrowhead Stadium" },
+  { matchNumber: 70, groupLetter: "J", homeTeamId: "ALG", awayTeamId: "AUT", kickoff: new Date("2026-06-28T02:00:00Z"), venue: "AT&T Stadium" },
+  { matchNumber: 71, groupLetter: "K", homeTeamId: "COL", awayTeamId: "POR", kickoff: new Date("2026-06-27T23:30:00Z"), venue: "Hard Rock Stadium" },
+  { matchNumber: 72, groupLetter: "K", homeTeamId: "COD", awayTeamId: "UZB", kickoff: new Date("2026-06-27T23:30:00Z"), venue: "Mercedes-Benz Stadium" },
 ];
 
 async function seed() {
