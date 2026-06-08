@@ -159,6 +159,9 @@ const MATCHES_DATA = [
 export async function seed() {
   const db = getClient();
 
+  console.log("🗑️  Clearing old predictions...");
+  await db.delete(schema.predictions);
+
   console.log("🗑️  Clearing old matches...");
   await db.delete(schema.matches);
 
