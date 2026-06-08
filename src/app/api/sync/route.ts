@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { syncResults } from "@/lib/sync";
 import { sendEmail } from "@/lib/email";
 import { getClient, schema } from "@/lib/db/index";
+import { seed } from "@/lib/seed";
 
 function verifyAdmin(request: Request): boolean {
   const token = request.headers.get("X-Admin-Token");
@@ -107,6 +108,21 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   if (!verifyAdmin(request)) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+  }
+
+  const url = new URL(request.url);
+  if (url.searchParams.get("seed") === "true") {
+    try {
+      const result = await seed();
+      return NextResponse.json({
+        success: true,
+        message: "تم إعادة ضبط الفرق والمباريات بنجاح",
+        ...result,
+      });
+    } catch (err) {
+      console.error("[sync] Seed failed:", err);
+      return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
+    }
   }
 
   try {
